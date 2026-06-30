@@ -202,10 +202,12 @@ export function MasterAE() {
       if (tMatch) {
         const m = parseInt(tMatch[1], 10);
         let y = currentYear;
-        if (m === 11 || m === 12) {
-          y = currentYear === 2025 ? 2025 : (currentYear === 2026 ? 2025 : currentYear);
-        } else if (m > currentMonthNum && (currentYear === 2025 || currentYear === 2026)) {
+        // If extracted month > current month, it's likely from the previous year
+        if (m > currentMonthNum) {
           y = currentYear - 1;
+        } else if (m === 11 || m === 12) {
+          // Special case for year end transition: if we are in early 2026, 11/12 should be 2025
+          if (currentYear === 2026) y = 2025;
         }
         return y * 12 + m;
       }
@@ -213,10 +215,10 @@ export function MasterAE() {
       if (numMatch) {
         const m = parseInt(numMatch[1], 10);
         let y = currentYear;
-        if (m === 11 || m === 12) {
-          y = currentYear === 2025 ? 2025 : (currentYear === 2026 ? 2025 : currentYear);
-        } else if (m > currentMonthNum && (currentYear === 2025 || currentYear === 2026)) {
+        if (m > currentMonthNum) {
           y = currentYear - 1;
+        } else if (m === 11 || m === 12) {
+          if (currentYear === 2026) y = 2025;
         }
         return y * 12 + m;
       }

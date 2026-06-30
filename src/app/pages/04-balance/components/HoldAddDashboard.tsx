@@ -369,10 +369,10 @@ export function HoldAddDashboard() {
         const m = parseInt(tMatch[1], 10);
         if (m >= 1 && m <= 12) {
           let y = currentPeriodYearNum;
-          if (m === 11 || m === 12) {
-            y = currentPeriodYearNum === 2025 ? 2025 : (currentPeriodYearNum === 2026 ? 2025 : currentPeriodYearNum);
-          } else if (m > currentPeriodMonthNum && (currentPeriodYearNum === 2025 || currentPeriodYearNum === 2026)) {
+          if (m > currentPeriodMonthNum) {
             y = currentPeriodYearNum - 1;
+          } else if (m === 11 || m === 12) {
+            if (currentPeriodYearNum === 2026) y = 2025;
           }
           return `Tháng ${m}/${y}`;
         }
@@ -895,17 +895,31 @@ export function HoldAddDashboard() {
       if (nv.includes("cancel") || st.includes("cancel") || ss.includes("cancel") || ttttUpper.includes("CANCEL")) {
         type = "cancel";
       }
-      // Khong dua gia tri sheet 1 ae vao cot luong hold
-      else if (ss.includes("sheet 1 ae")) {
-        // Not considered hold
-        type = "other";
+
+      // Normalize both for comparison (remove extra spaces, zero-pad months)
+      const normalizeMonth = (str: string | undefined) => {
+        if (!str) return "";
+        const cleaned = str.replace(/\s+/g, "").toLowerCase();
+        return cleaned.replace(/tháng0?(\d+)/i, "tháng$1").replace(/^(\d+)\.(\d+)$/, "tháng$1/$2");
+      };
+      
+      const normReportMonth = normalizeMonth(r["Tháng báo cáo"] || r["_fileMonth"] || r["Tháng"]);
+      const normCardSelectedMonth = normalizeMonth(currentPeriodVal);
+
+      // Rule: Lương hold của tháng = Nghiệp vụ HOLD + Sheet Source chứa tháng báo cáo hiện tại + Tháng báo cáo = card chọn
+      // AND Total Payment must be negative (meaning it's being held)
+      if (nv === "hold" || nv.includes("hold") || st.includes("hold") || ss.includes("hold")) {
+        // If it's the current month's hold
+        if (normReportMonth === normCardSelectedMonth && ss.includes(normCardSelectedMonth.replace("tháng", ""))) {
+          type = "hold";
+        } else {
+          type = "hold"; 
+        }
       }
-      // If Trạng thái or Nghiệp vụ contains hold but not add
-      else if (
-        (nv === "hold" || nv.includes("hold") || st.includes("hold") || ss.includes("hold")) &&
-        !(nv.includes("add") || st.includes("add") || ss.includes("add"))
-      ) {
-        type = "hold";
+      
+      // Khong dua gia tri sheet 1 ae vao cot luong hold
+      if (ss.includes("sheet 1 ae")) {
+        type = "other";
       }
 
       // Khoản add phải có tháng báo cáo trùng card chọn tháng
@@ -941,6 +955,10 @@ export function HoldAddDashboard() {
           r["Payment Amount"] ||
           0,
       );
+
+      // Only count into 'chi' if it's negative total payment for HOLD
+      // Or follow the user's literal rule for 'chi' column
+      const isCurrentMonthHold = type === "hold" && normReportMonth === normCardSelectedMonth;
 
       if (isPastMonthHold(r, currentPeriodMonthNum, currentPeriodYearNum) && type !== "cancel" && !isTargetHoldCancel) {
         tpRaw = 0;

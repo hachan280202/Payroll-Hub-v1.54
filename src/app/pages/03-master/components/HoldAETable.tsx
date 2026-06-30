@@ -41,6 +41,8 @@ export const HoldAETable = forwardRef<any, HoldAETableProps>(
           let y = currentYear;
           if (m > currentMonthNum) {
             y = currentYear - 1;
+          } else if (m === 11 || m === 12) {
+            if (currentYear === 2026) y = 2025;
           }
           return y * 12 + m;
         }
@@ -50,6 +52,8 @@ export const HoldAETable = forwardRef<any, HoldAETableProps>(
           let y = currentYear;
           if (m > currentMonthNum) {
             y = currentYear - 1;
+          } else if (m === 11 || m === 12) {
+            if (currentYear === 2026) y = 2025;
           }
           return y * 12 + m;
         }
@@ -70,7 +74,7 @@ export const HoldAETable = forwardRef<any, HoldAETableProps>(
       const filteredRows = raw.data.filter((r: any) => {
         const rowMonth = r["Tháng báo cáo"] || r["_fileMonth"] || "";
         const rowLimit = parseToMonthIndex(rowMonth);
-        return rowLimit === currentLimit;
+        return rowLimit <= currentLimit;
       });
 
       return { ...raw, data: filteredRows };
