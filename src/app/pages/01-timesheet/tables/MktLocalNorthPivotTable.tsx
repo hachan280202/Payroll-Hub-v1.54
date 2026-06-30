@@ -65,21 +65,18 @@ export const MktLocalNorthPivotTable: React.FC<MktLocalNorthPivotTableProps> = (
         <table className="w-full border-collapse text-[11px]">
           <thead className="sticky top-0 z-20">
             <tr className="bg-slate-50 shadow-sm">
-              <th className="px-4 py-3 text-left font-black uppercase tracking-wider text-slate-500 border-b border-slate-200 bg-slate-50/95 backdrop-blur sticky left-0 z-30 min-w-[120px]">
+              <th className="px-4 py-3 text-center font-black uppercase tracking-wider text-slate-500 border border-slate-200 bg-slate-50/95 backdrop-blur sticky left-0 z-30 min-w-[120px]">
                 BUSINESS
               </th>
-              <th className="px-4 py-3 text-left font-black uppercase tracking-wider text-slate-500 border-b border-slate-200 bg-slate-50/95 backdrop-blur min-w-[150px]">
-                L07 (REGION)
-              </th>
-              <th className="px-4 py-3 text-left font-black uppercase tracking-wider text-slate-500 border-b border-slate-200 bg-slate-50/95 backdrop-blur min-w-[200px]">
+              <th className="px-4 py-3 text-center font-black uppercase tracking-wider text-slate-500 border border-slate-200 bg-slate-50/95 backdrop-blur min-w-[200px]">
                 CHARGE TO CENTER MKT
               </th>
               {types.map((type) => (
-                <th key={type} className="px-4 py-3 text-right font-black uppercase tracking-wider text-slate-500 border-b border-slate-200 bg-slate-50/95 backdrop-blur min-w-[100px]">
+                <th key={type} className="px-4 py-3 text-center font-black uppercase tracking-wider text-slate-500 border border-slate-200 bg-slate-50/95 backdrop-blur min-w-[100px]">
                   {type}
                 </th>
               ))}
-              <th className="px-4 py-3 text-right font-black uppercase tracking-wider text-slate-500 border-b border-slate-200 bg-slate-50/95 backdrop-blur min-w-[120px]">
+              <th className="px-4 py-3 text-center font-black uppercase tracking-wider text-slate-500 border border-slate-200 bg-slate-50/95 backdrop-blur min-w-[120px]">
                 GRAND TOTAL
               </th>
             </tr>
@@ -87,21 +84,18 @@ export const MktLocalNorthPivotTable: React.FC<MktLocalNorthPivotTableProps> = (
           <tbody className="divide-y divide-slate-100">
             {rows.map((row, idx) => (
               <tr key={idx} className="hover:bg-slate-50/50 transition-colors group">
-                <td className="px-4 py-3 font-bold text-slate-600 bg-white group-hover:bg-slate-50/50 sticky left-0 z-10 border-r border-slate-50 transition-colors">
+                <td className="px-4 py-3 font-bold text-slate-600 bg-white group-hover:bg-slate-50/50 sticky left-0 z-10 border border-slate-200 transition-colors">
                   {row.business}
                 </td>
-                <td className="px-4 py-3 font-medium text-slate-500 italic">
-                  {row.center}
-                </td>
-                <td className="px-4 py-3 font-bold text-slate-700">
+                <td className="px-4 py-3 font-bold text-slate-700 border border-slate-200">
                   {row.chargeToCenterMkt}
                 </td>
                 {types.map((type) => (
-                  <td key={type} className={`px-4 py-3 text-right font-medium ${row.values[type] ? "text-slate-600" : "text-slate-300"}`}>
+                  <td key={type} className={`px-4 py-3 text-right font-medium border border-slate-200 ${row.values[type] ? "text-slate-600" : "text-slate-300"}`}>
                     {row.values[type] ? formatMoneyVND(row.values[type]) : "0"}
                   </td>
                 ))}
-                <td className="px-4 py-3 text-right font-black text-slate-900 bg-slate-50/20">
+                <td className="px-4 py-3 text-right font-black text-slate-900 bg-slate-50/20 border border-slate-200">
                   {formatMoneyVND(row.total)}
                 </td>
               </tr>
@@ -109,15 +103,15 @@ export const MktLocalNorthPivotTable: React.FC<MktLocalNorthPivotTableProps> = (
           </tbody>
           <tfoot className="sticky bottom-0 z-20">
             <tr className="bg-rose-50/90 backdrop-blur font-black uppercase tracking-widest text-[11px] border-t-2 border-rose-200 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
-              <td colSpan={3} className="px-6 py-4 text-rose-800">
+              <td colSpan={2} className="px-6 py-4 text-rose-800 border border-rose-200">
                 TỔNG CỘNG / GRAND TOTAL
               </td>
               {types.map((type) => (
-                <td key={type} className="px-4 py-4 text-right text-rose-700">
+                <td key={type} className="px-4 py-4 text-right text-rose-700 border border-rose-200">
                   {formatMoneyVND(grandTotals.totals[type] || 0)}
                 </td>
               ))}
-              <td className="px-4 py-4 text-right text-rose-900 underline decoration-rose-300 decoration-2 underline-offset-4">
+              <td className="px-4 py-4 text-right text-rose-900 underline decoration-rose-300 decoration-2 underline-offset-4 border border-rose-200">
                 {formatMoneyVND(grandTotals.grandTotal)}
               </td>
             </tr>

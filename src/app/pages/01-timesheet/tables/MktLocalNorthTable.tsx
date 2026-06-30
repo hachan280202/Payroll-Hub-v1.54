@@ -1,15 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { formatMoneyVND } from "../../../lib/utils/data-utils";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 
 interface MktLocalNorthTableProps {
   data: any[];
+  onFilteredDataChange?: (data: any[]) => void;
 }
 
-export function MktLocalNorthTable({ data }: MktLocalNorthTableProps) {
+export function MktLocalNorthTable({ data, onFilteredDataChange }: MktLocalNorthTableProps) {
   const [filters, setFilters] = useState<Record<string, string>>({
     business: "",
-    center: "",
     chargeToCenterMkt: "",
   });
 
@@ -21,10 +21,6 @@ export function MktLocalNorthTable({ data }: MktLocalNorthTableProps) {
     if (filters.business) {
       const lower = filters.business.toLowerCase();
       rows = rows.filter(r => r.business && String(r.business).toLowerCase().includes(lower));
-    }
-    if (filters.center) {
-      const lower = filters.center.toLowerCase();
-      rows = rows.filter(r => r.center && String(r.center).toLowerCase().includes(lower));
     }
     if (filters.chargeToCenterMkt) {
       const lower = filters.chargeToCenterMkt.toLowerCase();
@@ -55,6 +51,13 @@ export function MktLocalNorthTable({ data }: MktLocalNorthTableProps) {
       mktPivotGrandTotals: grandTotals,
     };
   }, [data, filters]);
+
+  // Notify filtered data change
+  useEffect(() => {
+    if (onFilteredDataChange) {
+      onFilteredDataChange(mktPivotRows);
+    }
+  }, [mktPivotRows, onFilteredDataChange]);
 
   return (
     <div className="flex-1 flex flex-col min-h-0 bg-white border-t border-border overflow-hidden rounded-[40px]">
@@ -91,14 +94,6 @@ export function MktLocalNorthTable({ data }: MktLocalNorthTableProps) {
               >
                 <div className="resize-x overflow-hidden w-[130px] min-w-[60px] pl-5 py-2.5 flex items-center">
                   Business
-                </div>
-              </th>
-              <th
-                style={{ padding: "0" }}
-                className="text-xs font-black uppercase tracking-wider text-slate-700 text-left border-r border-border align-middle"
-              >
-                <div className="resize-x overflow-hidden w-[160px] min-w-[80px] pl-5 py-2.5 flex items-center">
-                  L07 (Region)
                 </div>
               </th>
               <th
@@ -146,17 +141,6 @@ export function MktLocalNorthTable({ data }: MktLocalNorthTableProps) {
                 <div className="px-1.5 py-0.5">
                   <input
                     type="text"
-                    placeholder="Lọc L07 (Region)..."
-                    value={filters.center}
-                    onChange={(e) => setFilters(prev => ({ ...prev, center: e.target.value }))}
-                    className="w-full h-7 bg-white border border-slate-200 rounded px-2 text-[10px] placeholder:text-slate-400 font-normal focus:outline-none focus:ring-1 focus:ring-rose-400 focus:border-rose-400 text-slate-800 transition-all shadow-sm"
-                  />
-                </div>
-              </th>
-              <th className="p-1 border-r border-border bg-slate-50/50">
-                <div className="px-1.5 py-0.5">
-                  <input
-                    type="text"
                     placeholder="Lọc Charge To MKT..."
                     value={filters.chargeToCenterMkt}
                     onChange={(e) => setFilters(prev => ({ ...prev, chargeToCenterMkt: e.target.value }))}
@@ -178,9 +162,6 @@ export function MktLocalNorthTable({ data }: MktLocalNorthTableProps) {
               >
                 <td className="px-5 py-2.5 text-[11px] font-bold text-slate-700 border-r border-border">
                   {row.business}
-                </td>
-                <td className="px-5 py-2.5 text-[11px] font-medium text-slate-600 border-r border-border">
-                  {row.center}
                 </td>
                 <td className="px-5 py-2.5 text-[11px] font-medium text-slate-600 border-r border-border">
                   {row.chargeToCenterMkt}
@@ -206,7 +187,7 @@ export function MktLocalNorthTable({ data }: MktLocalNorthTableProps) {
             <tr className="sticky bottom-0 z-10 bg-slate-100 font-extrabold border-t-2 border-slate-300 h-12 text-slate-900 shadow-[0_-2px_6px_rgba(0,0,0,0.05)]">
               <td
                 className="px-5 py-3 text-xs font-black uppercase tracking-wider text-slate-900 border-r border-border"
-                colSpan={3}
+                colSpan={2}
               >
                 Tổng cộng / Grand Total
               </td>

@@ -125,6 +125,7 @@ interface DataTableProps {
   resizableColumns?: boolean;
   rowHeight?: number;
   style?: React.CSSProperties;
+  onFilteredDataChange?: (data: any[]) => void;
 }
 
 const ColumnFilter = ({
@@ -644,6 +645,7 @@ export const DataTable = React.forwardRef<DataTableRef, DataTableProps>(
       striped = false,
       resizableColumns = true,
       style: customStyle,
+      onFilteredDataChange,
     },
     ref,
   ) => {
@@ -1006,6 +1008,12 @@ export const DataTable = React.forwardRef<DataTableRef, DataTableProps>(
 
     // Keyboard shortcuts are handled in the main listener below
 
+    useEffect(() => {
+      if (onFilteredDataChange) {
+        onFilteredDataChange(filteredAndSortedData);
+      }
+    }, [filteredAndSortedData, onFilteredDataChange]);
+
     const totalPages =
       itemsPerPage === Infinity
         ? 1
@@ -1057,8 +1065,9 @@ export const DataTable = React.forwardRef<DataTableRef, DataTableProps>(
     const rowVirtualizer = useVirtualizer({
       count: paginatedData.length,
       getScrollElement: () => scrollContainerRef.current,
-      estimateSize: () => rowHeight,
-      overscan: 6,
+      estimateSize: useCallback(() => rowHeight, [rowHeight]),
+      overscan: 30,
+      getItemKey: useCallback((index: number) => paginatedData[index]?.id || index, [paginatedData]),
     });
     
     const virtualItems = rowVirtualizer.getVirtualItems();
@@ -1070,6 +1079,13 @@ export const DataTable = React.forwardRef<DataTableRef, DataTableProps>(
     // Defer heavy table re-render — user interactions stay responsive during data updates
     const deferredPaginatedData = useDeferredValue(paginatedData);
     const isStale = deferredPaginatedData !== paginatedData;
+
+    // Notify filtered data change
+    useEffect(() => {
+      if (onFilteredDataChange) {
+        onFilteredDataChange(filteredAndSortedData);
+      }
+    }, [filteredAndSortedData, onFilteredDataChange]);
 
     // Notify selection change
     useEffect(() => {
@@ -2107,7 +2123,7 @@ export const DataTable = React.forwardRef<DataTableRef, DataTableProps>(
             onFocus={() => !activeCell && setActiveCell({ r: 0, c: 0 })}
             
             onMouseMove={handleTableMouseMove}
-            style={{ overscrollBehavior: "contain", marginBottom: "8px" }}
+            style={{ overscrollBehavior: "contain", marginBottom: "8px", overflowAnchor: "none" }}
           >
             {resizingLineLeft !== null && (
               <div
@@ -2219,7 +2235,7 @@ export const DataTable = React.forwardRef<DataTableRef, DataTableProps>(
                 </tr>
 
               </thead>
-              <tbody className="divide-y border-primary/5">
+              <tbody className="border-primary/5">
                 {/* Top spacer */}
                 {vsTopPad > 0 && (
                   <tr style={{ height: `${vsTopPad}px` }} aria-hidden="true">
@@ -2408,7 +2424,10 @@ export const DataTable = React.forwardRef<DataTableRef, DataTableProps>(
           >
             <div className="flex items-center gap-3 px-3">
               <div className="flex items-center gap-1.5 hidden md:flex">
-                <span className="text-[11px] font-medium text-slate-400 whitespace-nowrap">
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider bg-slate-100 px-2 py-0.5 rounded border border-slate-200 shadow-inner">
+                  {filteredAndSortedData.length} KẾT QUẢ
+                </span>
+                <span className="text-[11px] font-medium text-slate-400 whitespace-nowrap ml-2">
                   Hiển thị:
                 </span>
                 <select
@@ -2506,8 +2525,6 @@ export const DataTable = React.forwardRef<DataTableRef, DataTableProps>(
                   }}
                 />
               </div>
-
-
             </div>
 
             {/* Pagination Controls - Added purely for navigation mimicking pagination feeling */}

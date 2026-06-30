@@ -4,9 +4,10 @@ import { DETAIL_COLUMNS } from "../../../constants/timesheet-columns";
 
 interface RosterRawTableProps {
   data: Record<string, unknown>[];
+  onFilteredDataChange?: (data: any[]) => void;
 }
 
-export function RosterRawTable({ data }: RosterRawTableProps) {
+export function RosterRawTable({ data, onFilteredDataChange }: RosterRawTableProps) {
   return (
     <DataTable
       columns={DETAIL_COLUMNS as any}
@@ -20,6 +21,7 @@ export function RosterRawTable({ data }: RosterRawTableProps) {
       headerClassName="bg-pink-100 text-pink-900 border-pink-200"
       footerClassName="bg-pink-200 text-pink-950 font-black"
       showFooter={false}
+      onFilteredDataChange={onFilteredDataChange}
     />
   );
 }

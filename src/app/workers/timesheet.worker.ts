@@ -276,7 +276,7 @@ export function calculateTimesheet(params: any) {
       class: effectiveClass,
       gio_vao: fromStr,
       gio_ra: toStr,
-      duration: actHours,
+      duration: durationHours,
       notes: String(getVal(t, ["notes", "note", "ghi chú", "ghi chu", "remarks"]) || "").trim().replace(/^["']|["']$/g, ""),
       overlap_check: "Không trùng",
 

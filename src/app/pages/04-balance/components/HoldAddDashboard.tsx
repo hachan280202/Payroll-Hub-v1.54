@@ -958,7 +958,6 @@ export function HoldAddDashboard() {
 
       // Only count into 'chi' if it's negative total payment for HOLD
       // Or follow the user's literal rule for 'chi' column
-      const isCurrentMonthHold = type === "hold" && normReportMonth === normCardSelectedMonth;
 
       if (isPastMonthHold(r, currentPeriodMonthNum, currentPeriodYearNum) && type !== "cancel" && !isTargetHoldCancel) {
         tpRaw = 0;
@@ -1397,6 +1396,13 @@ export function HoldAddDashboard() {
       );
     }
 
+    if (yearFilter && yearFilter !== "all") {
+      processedResult = processedResult.filter((v) => {
+        const m = v.displayMonth || v.month || "";
+        return m.includes(`/${yearFilter}`);
+      });
+    }
+
     return processedResult.sort((a, b) => {
       const mA = a.reportMonth === currentPeriod ? 99999999 : getMonthNum(a.month);
       const mB = b.reportMonth === currentPeriod ? 99999999 : getMonthNum(b.month);
@@ -1434,6 +1440,8 @@ export function HoldAddDashboard() {
     isPeriodSaved,
     currentPeriodMonthNum,
     currentPeriodYearNum,
+    currentPeriodVal,
+    yearFilter,
   ]);
 
   const toggleConfirm = (id: string, e: React.MouseEvent) => {
@@ -2026,41 +2034,6 @@ export function HoldAddDashboard() {
               >
                 Trial Balance
               </h1>
-            </div>
-            {/* Summary pills */}
-            <div className="flex gap-2 ml-4 flex-wrap items-center">
-              <span className="text-[11px] bg-secondary border border-border rounded-full px-3 py-1 text-foreground flex items-center gap-1.5 shadow-sm">
-                <span className="text-muted-foreground font-medium">
-                  CHI PHÍ LƯƠNG TA
-                </span>
-                <span
-                  className="font-nunito font-bold text-emerald-600"
-                  style={{ color: "#4e1c2d" }}
-                >
-                  {fmt(chiPhiLuongTaPillValue)}
-                </span>?</span>
-              <span className="text-[11px] bg-secondary border border-border rounded-full px-3 py-1 text-foreground flex items-center gap-1.5 shadow-sm">
-                <span className="text-muted-foreground font-medium">HOLD</span>
-                <span className="font-nunito font-bold text-rose-600">
-                  {fmt(holdPillValue)}
-                </span>
-              </span>
-              <span className="text-[11px] bg-secondary border border-border rounded-full px-3 py-1 text-foreground flex items-center gap-1.5 shadow-sm">
-                <span className="text-muted-foreground font-medium">Add</span>
-                <span
-                  className="font-nunito font-bold text-blue-600"
-                  style={{ color: "#68182e" }}
-                >
-                  {fmt(grandAddPillValue)}
-                </span>?</span>
-              <span className="text-[11px] bg-secondary border border-border rounded-full px-3 py-1 text-foreground flex items-center gap-1.5 shadow-sm">
-                <span className="text-muted-foreground font-medium">Cancel</span>
-                <span
-                  className="font-nunito font-bold text-orange-600"
-                  style={{ color: "#e65100" }}
-                >
-                  {fmt(cancelPillValue)}
-                </span>?</span>
             </div>
           </div>
           {/* Controls */}

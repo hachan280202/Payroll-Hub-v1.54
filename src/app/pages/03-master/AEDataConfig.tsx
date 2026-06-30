@@ -1,4 +1,4 @@
-import appLogo from "@/assets/images/regenerated_image_1782635250559.jpg";
+import appLogo from "@/assets/images/regenerated_image_1782801979718.png";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router";

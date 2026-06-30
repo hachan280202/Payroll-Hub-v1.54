@@ -1,4 +1,4 @@
-import appLogo from "@/assets/images/regenerated_image_1782635250559.jpg";
+import appLogo from "@/assets/images/regenerated_image_1782801979718.png";
 /* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/set-state-in-effect */
 import React, { useMemo, useRef, useState, useEffect, useTransition, useCallback } from "react";
 import { useLocation } from "react-router";
@@ -197,6 +197,7 @@ export function TimesheetHub() {
   const [totalSyncRows, setTotalSyncRows] = useState(0);
   const [syncedRowsCount, setSyncedRowsCount] = useState(0);
   const [showSqlDialog, setShowSqlDialog] = useState(false);
+  const [tableFilteredCount, setTableFilteredCount] = useState<number | null>(null);
 
   const fromAudit =
     location.state &&
@@ -317,8 +318,13 @@ export function TimesheetHub() {
       setDebouncedFromDate(fromDate);
       setDebouncedToDate(toDate);
     }, 500);
+    setTableFilteredCount(null);
     return () => clearTimeout(timer);
   }, [fromDate, toDate]);
+
+  useEffect(() => {
+    setTableFilteredCount(null);
+  }, [activeTab, searchTerm, targetDate, targetCenter]);
 
   useEffect(() => {
     updateAppData((prev) => {
@@ -738,7 +744,7 @@ export function TimesheetHub() {
                       </DropdownMenuContent>
                     </DropdownMenu>
                     <p className="text-[0.6rem] font-bold text-muted-foreground uppercase tracking-[0.1em] mt-0.5 truncate ml-1">
-                      SUMMARY DATA • {currentData.length || 0} RECORDS
+                      SUMMARY DATA • {tableFilteredCount !== null ? tableFilteredCount : (searchTerm ? searchData.length : currentData.length)} RECORDS
                     </p>
                   </div>
                 </div>
@@ -1003,7 +1009,7 @@ export function TimesheetHub() {
                             Đang tìm: {searchTerm}{" "}
                             {targetCenter ? `[${targetCenter}]` : ""}{" "}
                             {targetDate ? `(${targetDate})` : ""} •{" "}
-                            {searchData.length} kết quả
+                            {tableFilteredCount !== null ? tableFilteredCount : searchData.length} kết quả
                           </span>
                           <button
                             onClick={handleClearFilters}
@@ -1035,11 +1041,21 @@ export function TimesheetHub() {
                         grandTotals={mktPivotGrandTotals}
                       />
                     ) : activeTab === "roster_raw" ? (
-                      <RosterRawTable data={searchData} />
+                      <RosterRawTable 
+                        data={searchData} 
+                        onFilteredDataChange={(d) => setTableFilteredCount(d.length)}
+                      />
                     ) : activeTab === "employee" ? (
-                      <EmployeeTable data={searchData} calculatedRosterData={calculatedRosterData} />
+                      <EmployeeTable 
+                        data={searchData} 
+                        calculatedRosterData={calculatedRosterData} 
+                        onFilteredDataChange={(d) => setTableFilteredCount(d.length)}
+                      />
                     ) : activeTab === "center" ? (
-                      <CenterTable data={searchData} />
+                      <CenterTable 
+                        data={searchData} 
+                        onFilteredDataChange={(d) => setTableFilteredCount(d.length)}
+                      />
                     ) : null}
                   </div>
                 )}

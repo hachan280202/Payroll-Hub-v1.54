@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
+import appLogo from "@/assets/images/regenerated_image_1782801979718.png";
 import React, { useState, useMemo, useEffect, useCallback, useTransition, useDeferredValue } from "react";
 import { useNavigate, useLocation } from "react-router";
 import { useAppData } from "../../lib/contexts/AppDataContext";
@@ -113,6 +114,12 @@ export function Audit() {
 
   // GIẢI PHÁP CHỐNG LAG 1: Dùng useTransition để nhường luồng xử lý UI (Không làm kẹt/đơ nút bấm)
   const [isPending, startTransition] = useTransition();
+
+  const [tableFilteredCount, setTableFilteredCount] = useState<number | null>(null);
+
+  const handleFilteredDataChange = useCallback((data: any[]) => {
+    setTableFilteredCount(data.length);
+  }, []);
 
   const handleRefreshData = () => {
     setIsRefreshing(true);
@@ -1379,6 +1386,7 @@ export function Audit() {
               showRowNumber={true}
               hideSearch={false}
               showFooter={true}
+              onFilteredDataChange={handleFilteredDataChange}
               externalSearchTerm={deferredSearchTerm}
               onExternalSearchChange={setSearchTerm}
               onRowClick={handleMainRowClick}
@@ -1395,6 +1403,7 @@ export function Audit() {
               showRowNumber={false}
               hideSearch={true}
               showFooter={true}
+              onFilteredDataChange={handleFilteredDataChange}
               externalSearchTerm=""
               onExternalSearchChange={setDetailManualFilter}
               storageKey="audit_detail_v2"

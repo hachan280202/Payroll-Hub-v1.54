@@ -4,9 +4,10 @@ import { CENTER_COLUMNS } from "../../../constants/timesheet-columns";
 
 interface CenterTableProps {
   data: Record<string, unknown>[];
+  onFilteredDataChange?: (data: any[]) => void;
 }
 
-export function CenterTable({ data }: CenterTableProps) {
+export function CenterTable({ data, onFilteredDataChange }: CenterTableProps) {
   return (
     <DataTable
       columns={CENTER_COLUMNS as any}
@@ -20,6 +21,7 @@ export function CenterTable({ data }: CenterTableProps) {
       headerClassName="bg-indigo-50 text-indigo-900 border-indigo-100"
       footerClassName="bg-indigo-100 text-indigo-950 font-black"
       showFooter={true}
+      onFilteredDataChange={onFilteredDataChange}
     />
   );
 }

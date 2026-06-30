@@ -6,9 +6,10 @@ import { useMemo } from "react";
 interface EmployeeTableProps {
   data: Record<string, unknown>[];
   calculatedRosterData: Record<string, unknown>[];
+  onFilteredDataChange?: (data: any[]) => void;
 }
 
-export function EmployeeTable({ data, calculatedRosterData }: EmployeeTableProps) {
+export function EmployeeTable({ data, calculatedRosterData, onFilteredDataChange }: EmployeeTableProps) {
   const columns = useMemo(() => {
     return getDynamicEmployeeColumns(calculatedRosterData as any);
   }, [calculatedRosterData]);
@@ -26,6 +27,7 @@ export function EmployeeTable({ data, calculatedRosterData }: EmployeeTableProps
       headerClassName="bg-emerald-50 text-emerald-900 border-emerald-100"
       footerClassName="bg-emerald-100 text-emerald-950 font-black"
       showFooter={true}
+      onFilteredDataChange={onFilteredDataChange}
     />
   );
 }
