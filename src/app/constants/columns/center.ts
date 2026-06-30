@@ -1,0 +1,72 @@
+export const CENTER_COLUMNS = [
+  {
+    key: "business",
+    label: "Business",
+    type: "text" as const,
+    width: 120,
+    headerClassName: "leading-[16.4px]",
+  },
+  { key: "l07", label: "L07", type: "text" as const, width: 150 },
+  {
+    key: "salaryScale",
+    label: "Salary Scale",
+    type: "text" as const,
+    width: 120,
+  },
+  { key: "from", label: "From", type: "date" as const, width: 100 },
+  { key: "to", label: "To", type: "date" as const, width: 100 },
+  {
+    key: "chargeLxo",
+    label: "Charge LXO",
+    type: "currency" as const,
+    width: 140,
+  },
+  {
+    key: "chargeEc",
+    label: "Charge EC",
+    type: "currency" as const,
+    width: 140,
+  },
+  {
+    key: "chargePtDemo",
+    label: "Charge PT-DEMO",
+    type: "currency" as const,
+    width: 140,
+  },
+  {
+    key: "chargeMktLocal",
+    label: "Charge MKT Local",
+    type: "currency" as const,
+    width: 140,
+  },
+  {
+    key: "chargeRenewalProjects",
+    label: "Charge Renewal",
+    type: "currency" as const,
+    width: 140,
+  },
+  {
+    key: "chargeDiscoveryCamp",
+    label: "Charge Discovery",
+    type: "currency" as const,
+    width: 140,
+  },
+  {
+    key: "chargeSummerOuting",
+    label: "Charge Summer Outing",
+    type: "currency" as const,
+    width: 140,
+  },
+  {
+    key: "chargeSummerInstructors",
+    label: "Charge Summer Instructors",
+    type: "currency" as const,
+    width: 140,
+  },
+  {
+    key: "totalSalary",
+    label: "Total Salary",
+    type: "currency" as const,
+    width: 160,
+  },
+];
