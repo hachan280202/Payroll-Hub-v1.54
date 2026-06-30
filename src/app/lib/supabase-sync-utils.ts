@@ -30,6 +30,9 @@ END $$;
 -- Row Level Security (RLS) - Allow ALL operations for anon role
 ALTER TABLE roster_cham_cong ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow all for anon" ON roster_cham_cong FOR ALL USING (true) WITH CHECK (true);
+
+-- Reload schema cache for PostgREST
+NOTIFY pgrst, 'reload schema';
 `;
 
 export async function syncRosterToSupabase(
@@ -126,6 +129,10 @@ export async function syncRosterToSupabase(
     if (error) {
       if (error.message.includes('relation "roster_cham_cong" does not exist')) {
         throw new Error("Bảng 'roster_cham_cong' chưa tồn tại trên Supabase. Vui lòng chạy script SQL setup trong phần cấu hình Supabase của bạn.");
+      }
+
+      if (error.code === 'PGRST204' || error.message.includes("Could not find the 'charge_to_center_mkt' column")) {
+        throw new Error("Thiếu cột 'charge_to_center_mkt' trong bảng Supabase. Vui lòng chạy lại script SQL setup để cập nhật cấu trúc bảng.");
       }
       
       if (error.message.includes("Failed to fetch") || error.message.includes("fetch")) {

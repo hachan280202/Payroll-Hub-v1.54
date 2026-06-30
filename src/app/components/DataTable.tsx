@@ -2424,9 +2424,6 @@ export const DataTable = React.forwardRef<DataTableRef, DataTableProps>(
           >
             <div className="flex items-center gap-3 px-3">
               <div className="flex items-center gap-1.5 hidden md:flex">
-                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider bg-slate-100 px-2 py-0.5 rounded border border-slate-200 shadow-inner">
-                  {filteredAndSortedData.length} KẾT QUẢ
-                </span>
                 <span className="text-[11px] font-medium text-slate-400 whitespace-nowrap ml-2">
                   Hiển thị:
                 </span>

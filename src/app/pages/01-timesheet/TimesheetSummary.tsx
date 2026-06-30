@@ -596,7 +596,7 @@ export default function TimesheetSummaryPage({
       // Detailed alert as requested for debugging RLS and column issues
       alert('Lỗi Supabase: ' + errMsg);
       toast.error(`Đồng bộ thất bại: ${errMsg}`);
-      if (errMsg.includes("Bảng 'roster_cham_cong' chưa tồn tại")) {
+      if (errMsg.includes("Bảng 'roster_cham_cong' chưa tồn tại") || errMsg.includes("Thiếu cột 'charge_to_center_mkt'")) {
         setShowSqlDialog(true);
       }
     } finally {
@@ -962,11 +962,6 @@ export default function TimesheetSummaryPage({
             </div>
 
             <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="px-2 py-0.5 rounded bg-rose-100 text-rose-700 text-[10px] font-black uppercase tracking-widest border border-rose-200">
-                  TIMESHEET CONFIG
-                </span>
-              </div>
               <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                 <h2 className="text-3xl font-normal font-serif text-foreground tracking-tight flex items-end gap-1" style={{ fontSize: "25px", paddingTop: "0px", paddingBottom: "0px" }}>
                   Files{" "}
@@ -978,9 +973,7 @@ export default function TimesheetSummaryPage({
                   </span>
                 </h2>
               </div>
-              <p className="text-[0.625rem] font-bold text-muted-foreground uppercase tracking-[0.2em] mt-1">
-                DATA UPLOAD • {inputRows.length} RECORDS
-              </p>
+
             </div>
           </div>
 
@@ -1096,7 +1089,7 @@ export default function TimesheetSummaryPage({
             <DialogHeader>
               <DialogTitle className="text-2xl font-black uppercase tracking-wider">Thiết lập Bảng Supabase</DialogTitle>
               <DialogDescription className="text-sky-100 font-medium">
-                Bảng 'roster_cham_cong' chưa tồn tại. Vui lòng copy script bên dưới và chạy trong SQL Editor của Supabase.
+                Bảng 'roster_cham_cong' chưa tồn tại hoặc thiếu cột dữ liệu. Vui lòng copy script bên dưới và chạy trong SQL Editor của Supabase để cập nhật cấu trúc bảng.
               </DialogDescription>
             </DialogHeader>
           </div>

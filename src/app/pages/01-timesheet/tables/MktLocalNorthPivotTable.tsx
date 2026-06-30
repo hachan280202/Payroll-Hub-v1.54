@@ -65,7 +65,7 @@ export const MktLocalNorthPivotTable: React.FC<MktLocalNorthPivotTableProps> = (
         <table className="w-full border-collapse text-[11px]">
           <thead className="sticky top-0 z-20">
             <tr className="bg-slate-50 shadow-sm">
-              <th className="px-4 py-3 text-center font-black uppercase tracking-wider text-slate-500 border border-slate-200 bg-slate-50/95 backdrop-blur sticky left-0 z-30 min-w-[120px]">
+              <th className="px-4 py-3 text-center font-black uppercase tracking-wider text-slate-500 border border-slate-200 bg-slate-50/95 backdrop-blur min-w-[120px]">
                 BUSINESS
               </th>
               <th className="px-4 py-3 text-center font-black uppercase tracking-wider text-slate-500 border border-slate-200 bg-slate-50/95 backdrop-blur min-w-[200px]">
@@ -84,7 +84,7 @@ export const MktLocalNorthPivotTable: React.FC<MktLocalNorthPivotTableProps> = (
           <tbody className="divide-y divide-slate-100">
             {rows.map((row, idx) => (
               <tr key={idx} className="hover:bg-slate-50/50 transition-colors group">
-                <td className="px-4 py-3 font-bold text-slate-600 bg-white group-hover:bg-slate-50/50 sticky left-0 z-10 border border-slate-200 transition-colors">
+                <td className="px-4 py-3 font-bold text-slate-600 border border-slate-200">
                   {row.business}
                 </td>
                 <td className="px-4 py-3 font-bold text-slate-700 border border-slate-200">

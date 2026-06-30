@@ -1901,36 +1901,6 @@ export function HoldAddDashboard() {
     };
   }, [monthKeys, computedMonthTotals, data, grouped, getMonthNum, currentPeriod]);
 
-  const normalizeMonthLabel = useCallback(
-    (value?: string) => {
-      if (!value) return "";
-      const extracted = extractMonth(value);
-      if (extracted) return extracted;
-      return String(value).trim();
-    },
-    [extractMonth],
-  );
-
-  const isCurrentPeriodRow = useCallback(
-    (row: any) => {
-      const candidates = [
-        row?.reportMonth,
-        row?.month,
-        row?.displayMonth,
-        row?.customMonthDisplay,
-      ];
-      return candidates.some(
-        (candidate) =>
-          normalizeMonthLabel(String(candidate || "")) === currentPeriod,
-      );
-    },
-    [currentPeriod, normalizeMonthLabel],
-  );
-
-  const currentPeriodRows = useMemo(() => {
-    return data.filter(isCurrentPeriodRow);
-  }, [data, isCurrentPeriodRow]);
-
   const countBusinesses = useCallback((rows: BuRow[]) => {
     return new Set(
       rows
@@ -1938,66 +1908,6 @@ export function HoldAddDashboard() {
         .map((row) => row.bu),
     ).size;
   }, []);
-
-  const grandAddPillValue = useMemo(() => {
-    return currentPeriodRows
-      .filter((e) => {
-        const idLower = String(e.id).toLowerCase();
-        const display = String(
-          e.customMonthDisplay || e.month || "",
-        ).toUpperCase();
-        return (
-          idLower.includes("_add") ||
-          idLower.includes("add") ||
-          display.includes("ADD")
-        );
-      })
-      .reduce((s, e) => s + e.thu + (e.add || 0), 0);
-  }, [currentPeriodRows]);
-
-  const chiPhiLuongTaPillValue = useMemo(() => {
-    return currentPeriodRows
-      .filter(
-        (e) =>
-          !e.id.includes("_hold") &&
-          !e.id.includes("_add") &&
-          !e.id.includes("_cancel") &&
-          !e.id.includes("_past_"),
-      )
-      .reduce((s, e) => s + e.thu, 0);
-  }, [currentPeriodRows]);
-
-  const holdPillValue = useMemo(() => {
-    return currentPeriodRows
-      .filter((e) => {
-        const idLower = String(e.id).toLowerCase();
-        const display = String(
-          e.customMonthDisplay || e.month || "",
-        ).toUpperCase();
-        return (
-          idLower.includes("_hold") ||
-          idLower.includes("hold") ||
-          display.includes("HOLD")
-        );
-      })
-      .reduce((s, e) => s + e.chi + (e.hold || 0), 0);
-  }, [currentPeriodRows]);
-
-  const cancelPillValue = useMemo(() => {
-    return currentPeriodRows
-      .filter((e) => {
-        const idLower = String(e.id).toLowerCase();
-        const display = String(
-          e.customMonthDisplay || e.month || "",
-        ).toUpperCase();
-        return (
-          idLower.includes("_cancel") ||
-          idLower.includes("cancel") ||
-          display.includes("CANCEL")
-        );
-      })
-      .reduce((s, e) => s + Math.abs(e.chi) + (e.cancel || 0), 0);
-  }, [currentPeriodRows]);
 
   return (
     <div className="h-full flex flex-col overflow-hidden bg-transparent w-full">

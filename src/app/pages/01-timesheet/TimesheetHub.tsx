@@ -300,6 +300,8 @@ export function TimesheetHub() {
       startTransition(() => {
         setFromDate(newFrom);
         setToDate(newTo);
+        setTargetDate("");
+        setTargetCenter("");
       });
       
       // Remove syncing to globalMonth
@@ -486,14 +488,13 @@ export function TimesheetHub() {
       if (!type) return; // skip empty data as requested
 
       const bus = String(r.business || "").trim();
-      const cen = String(r.center || "").trim();
       const charge = String(r.chargeToCenterMkt || "").trim();
-      const key = `${bus}||${cen}||${charge}`;
+      const key = `${bus}||${charge}`;
 
       if (!map.has(key)) {
         map.set(key, {
           business: bus,
-          center: cen,
+          center: "", // No longer grouping by center as requested
           chargeToCenterMkt: charge,
           values: {},
           total: 0,
@@ -512,8 +513,6 @@ export function TimesheetHub() {
     return Array.from(map.values()).sort((a, b) => {
       const comp1 = a.business.localeCompare(b.business);
       if (comp1 !== 0) return comp1;
-      const comp2 = a.center.localeCompare(b.center);
-      if (comp2 !== 0) return comp2;
       return a.chargeToCenterMkt.localeCompare(b.chargeToCenterMkt);
     });
   }, [activeTab, searchData]);
@@ -540,7 +539,6 @@ export function TimesheetHub() {
       const rows = mktPivotRows.map((row) => {
         const item: any = {
           "Business": row.business,
-          "L07 (Region)": row.center,
           "Charge To Center MKT": row.chargeToCenterMkt,
         };
         mktPivotUniqueTypes.forEach((type) => {
@@ -614,7 +612,7 @@ export function TimesheetHub() {
       console.error("Supabase Sync Error:", err);
       const errMsg = err instanceof Error ? err.message : String(err);
       toast.error(`Đồng bộ thất bại: ${errMsg}`);
-      if (errMsg.includes("Bảng 'roster_cham_cong' chưa tồn tại")) {
+      if (errMsg.includes("Bảng 'roster_cham_cong' chưa tồn tại") || errMsg.includes("Thiếu cột 'charge_to_center_mkt'")) {
         setShowSqlDialog(true);
       }
     } finally {
@@ -697,7 +695,7 @@ export function TimesheetHub() {
                                 return (
                                   <>
                                     <Icon className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                                    <span className="text-[0.75rem] font-bold uppercase tracking-widest">
+                                    <span className="text-[0.75rem] font-bold uppercase tracking-widest whitespace-nowrap">
                                       {active?.label}
                                     </span>
                                   </>
@@ -743,9 +741,7 @@ export function TimesheetHub() {
                         ))}
                       </DropdownMenuContent>
                     </DropdownMenu>
-                    <p className="text-[0.6rem] font-bold text-muted-foreground uppercase tracking-[0.1em] mt-0.5 truncate ml-1">
-                      SUMMARY DATA • {tableFilteredCount !== null ? tableFilteredCount : (searchTerm ? searchData.length : currentData.length)} RECORDS
-                    </p>
+
                   </div>
                 </div>
 
@@ -799,7 +795,10 @@ export function TimesheetHub() {
                           }
                           onSelect={(d) => {
                             startTransition(() => {
-                              setFromDate(d ? format(d, "yyyy-MM-dd") : "");
+                              const newDate = d ? format(d, "yyyy-MM-dd") : "";
+                              setFromDate(newDate);
+                              setTargetDate("");
+                              setTargetCenter("");
                             });
                           }}
                           initialFocus
@@ -841,7 +840,10 @@ export function TimesheetHub() {
                           }
                           onSelect={(d) => {
                             startTransition(() => {
-                              setToDate(d ? format(d, "yyyy-MM-dd") : "");
+                              const newDate = d ? format(d, "yyyy-MM-dd") : "";
+                              setToDate(newDate);
+                              setTargetDate("");
+                              setTargetCenter("");
                             });
                           }}
                           initialFocus
@@ -1008,8 +1010,7 @@ export function TimesheetHub() {
                           >
                             Đang tìm: {searchTerm}{" "}
                             {targetCenter ? `[${targetCenter}]` : ""}{" "}
-                            {targetDate ? `(${targetDate})` : ""} •{" "}
-                            {tableFilteredCount !== null ? tableFilteredCount : searchData.length} kết quả
+                            {targetDate ? `(${targetDate})` : ""}
                           </span>
                           <button
                             onClick={handleClearFilters}
@@ -1083,7 +1084,7 @@ export function TimesheetHub() {
             <DialogHeader>
               <DialogTitle className="text-2xl font-black uppercase tracking-wider">Thiết lập Bảng Supabase</DialogTitle>
               <DialogDescription className="text-sky-100 font-medium">
-                Bảng 'roster_cham_cong' chưa tồn tại. Vui lòng copy script bên dưới và chạy trong SQL Editor của Supabase.
+                Bảng 'roster_cham_cong' chưa tồn tại hoặc thiếu cột dữ liệu. Vui lòng copy script bên dưới và chạy trong SQL Editor của Supabase để cập nhật cấu trúc bảng.
               </DialogDescription>
             </DialogHeader>
           </div>
