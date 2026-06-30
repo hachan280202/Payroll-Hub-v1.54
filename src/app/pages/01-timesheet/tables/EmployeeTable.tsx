@@ -18,7 +18,7 @@ export function EmployeeTable({ data, calculatedRosterData, onFilteredDataChange
     <DataTable
       columns={columns as any}
       data={data as any}
-      isEditable={false}
+      isEditable={true}
       showRowNumber={true}
       selectable={false}
       striped={false}

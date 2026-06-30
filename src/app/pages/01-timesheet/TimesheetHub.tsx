@@ -1,10 +1,12 @@
-import appLogo from "@/assets/images/regenerated_image_1782801979718.png";
+import appLogo from "@/assets/images/regenerated_image_1782821491957.png";
 /* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/set-state-in-effect */
 import React, { useMemo, useRef, useState, useEffect, useTransition, useCallback } from "react";
 import { useLocation } from "react-router";
 import { useAppData } from "../../lib/contexts/AppDataContext";
 import { useTimesheetCalculations } from "../../hooks/useTimesheetCalculations";
 import { prepareDataForExport } from "../../lib/utils/data-utils";
+import { INITIAL_APP_DATA } from "../../constants/initial-data";
+import { Tooltip, TooltipTrigger, TooltipContent } from "../../components/ui/tooltip";
 import {
   FileText,
   Users,
@@ -29,8 +31,14 @@ import { CenterTable } from "./tables/CenterTable";
 import { MktLocalNorthPivotTable } from "./tables/MktLocalNorthPivotTable";
 import TimesheetSummaryPage from "./TimesheetSummary";
 import { useNavigate } from "react-router";
-import { isSupabaseConfigured } from "../../lib/supabase";
-import { syncRosterToSupabase, SQL_SETUP_SCRIPT } from "../../lib/supabase-sync-utils";
+import { supabase, isSupabaseConfigured } from "@/lib/supabaseClient";
+import { 
+  syncRosterToSupabase, 
+  syncEmployeesToSupabase, 
+  syncSalaryScalesToSupabase, 
+  clearSupabaseData, 
+  SQL_SETUP_SCRIPT 
+} from "../../lib/supabase-sync-utils";
 import { toast } from "sonner";
 import {
   Popover,
@@ -197,7 +205,118 @@ export function TimesheetHub() {
   const [totalSyncRows, setTotalSyncRows] = useState(0);
   const [syncedRowsCount, setSyncedRowsCount] = useState(0);
   const [showSqlDialog, setShowSqlDialog] = useState(false);
-  const [tableFilteredCount, setTableFilteredCount] = useState<number | null>(null);
+  const [_tableFilteredCount, setTableFilteredCount] = useState<number | null>(null);
+  const [isFetchingRealtime, setIsFetchingRealtime] = useState(false);
+
+  useEffect(() => {
+    const fetchRealtimeData = async () => {
+      if (!isSupabaseConfigured()) {
+        console.log("Supabase is not configured yet. Using local state.");
+        return;
+      }
+      setIsFetchingRealtime(true);
+      try {
+        // Fetch roster_cham_cong
+        const { data: dbRoster, error: rosterErr } = await supabase
+          .from("roster_cham_cong")
+          .select("*");
+          
+        // Fetch nhan_vien
+        const { data: dbStaff, error: staffErr } = await supabase
+          .from("nhan_vien")
+          .select("*");
+
+        // Fetch thang_luong
+        const { data: dbSalary, error: salaryErr } = await supabase
+          .from("thang_luong")
+          .select("*");
+
+        if (rosterErr || staffErr || salaryErr) {
+          console.warn("Supabase tables might not exist yet. Please run the SQL setup script.", { rosterErr, staffErr, salaryErr });
+          return;
+        }
+
+        if ((dbRoster || []).length === 0 && (dbStaff || []).length === 0 && (dbSalary || []).length === 0) {
+          console.log("Supabase tables are empty. Keeping initial local data so user can sync.");
+          return;
+        }
+
+        // Map Roster rows
+        const mappedRoster = (dbRoster || []).map((row: any) => ({
+          ...(row.raw_data || {}),
+          _rowId: row.unique_id || `supa-r-${row.id}`,
+          _sourceFile: row.raw_data?._sourceFile || "Supabase_Live",
+          center: row.l07 || "",
+          l07: row.l07 || "",
+          business: row.business || "",
+          ma_nv: row.ma_nv || "",
+          full_name: row.full_name || "",
+          ngay: row.ngay || "",
+          type: row.type || "",
+          class: row.class || "",
+          gio_vao: row.gio_vao || "",
+          gio_ra: row.gio_ra || "",
+          duration: Number(row.duration) || 0,
+          notes: row.notes || "",
+          employeeId: row.ma_nv || "",
+          fullName: row.full_name || "",
+          maAE: row.l07 || "",
+          date: row.ngay || "",
+          taskType: row.type || "",
+          classCode: row.class || "",
+          from: row.gio_vao || "",
+          to: row.gio_ra || "",
+          chargeToCenterMkt: row.charge_to_center_mkt || ""
+        }));
+
+        // Map Staff rows
+        const mappedStaff = (dbStaff || []).map((row: any) => ({
+          ...(row.raw_data || {}),
+          _rowId: row.unique_id,
+          employeeId: row.employee_id,
+          fullName: row.full_name,
+          bankAccountNumber: row.bank_account_number,
+          salaryScale: row.salary_scale,
+          business: row.business,
+          center: row.center,
+          from: row.from,
+          to: row.to,
+          className: row.class_name,
+          noteDays: row.note_days
+        }));
+
+        // Map Salary scale rows
+        const mappedSalary = (dbSalary || []).map((row: any) => ({
+          ...(row.raw_data || {}),
+          _rowId: row.unique_id,
+          sCode: row.s_code,
+          academicPrice: Number(row.academic_price) || 0,
+          baseSalary: Number(row.base_salary) || 0,
+          totalSalary: Number(row.total_salary) || 0,
+          deductionHours: Number(row.deduction_hours) || 0
+        }));
+
+        updateAppData((prev) => ({
+          ...prev,
+          Q_Roster: mappedRoster,
+          Q_Staff: mappedStaff,
+          Q_Salary_Scale: mappedSalary
+        }), false);
+
+        console.log("Successfully loaded real-time data from Supabase:", {
+          roster: mappedRoster.length,
+          staff: mappedStaff.length,
+          salary: mappedSalary.length
+        });
+      } catch (err) {
+        console.error("Error fetching realtime Supabase data:", err);
+      } finally {
+        setIsFetchingRealtime(false);
+      }
+    };
+
+    fetchRealtimeData();
+  }, [updateAppData]);
 
   const fromAudit =
     location.state &&
@@ -580,28 +699,62 @@ export function TimesheetHub() {
     }
 
     const rosterData = appData.Q_Roster || [];
+    const staffData = appData.Q_Staff || [];
+    const salaryData = appData.Q_Salary_Scale || [];
 
-    if (!rosterData || rosterData.length === 0) {
-      toast.warning("Không có dữ liệu Roster để đồng bộ.");
+    if (rosterData.length === 0 && staffData.length === 0 && salaryData.length === 0) {
+      toast.warning("Không có dữ liệu để đồng bộ.");
       return;
     }
 
     setIsSyncing(true);
-    setTotalSyncRows(rosterData.length);
+    setTotalSyncRows(rosterData.length + staffData.length + salaryData.length);
     setSyncedRowsCount(0);
     setSyncProgress(0);
 
     try {
-      const { successCount, totalRows } = await syncRosterToSupabase(
-        rosterData,
-        (current, total) => {
-          setSyncedRowsCount(current);
-          setTotalSyncRows(total);
-          setSyncProgress(Math.round((current / total) * 100));
-        }
-      );
+      let overallSuccessCount = 0;
+      const totalToSync = rosterData.length + staffData.length + salaryData.length;
 
-      toast.success(`Đồng bộ thành công ${successCount.toLocaleString()}/${totalRows.toLocaleString()} dòng lên Supabase.`);
+      // 1. Sync Staff
+      if (staffData.length > 0) {
+        const { successCount } = await syncEmployeesToSupabase(
+          staffData,
+          (current) => {
+            setSyncedRowsCount(current);
+            setSyncProgress(Math.round((current / totalToSync) * 100));
+          }
+        );
+        overallSuccessCount += successCount;
+      }
+
+      // 2. Sync Salary Scale
+      if (salaryData.length > 0) {
+        const { successCount } = await syncSalaryScalesToSupabase(
+          salaryData,
+          (current) => {
+            const currentTotal = staffData.length + current;
+            setSyncedRowsCount(currentTotal);
+            setSyncProgress(Math.round((currentTotal / totalToSync) * 100));
+          }
+        );
+        overallSuccessCount += successCount;
+      }
+
+      // 3. Sync Roster
+      if (rosterData.length > 0) {
+        const { successCount } = await syncRosterToSupabase(
+          rosterData,
+          (current) => {
+            const currentTotal = staffData.length + salaryData.length + current;
+            setSyncedRowsCount(currentTotal);
+            setSyncProgress(Math.round((currentTotal / totalToSync) * 100));
+          }
+        );
+        overallSuccessCount += successCount;
+      }
+
+      toast.success(`Đồng bộ thành công ${overallSuccessCount.toLocaleString()}/${totalToSync.toLocaleString()} dòng lên Supabase.`);
       
       updateAppData((prev: any) => ({
         ...prev,
@@ -612,7 +765,15 @@ export function TimesheetHub() {
       console.error("Supabase Sync Error:", err);
       const errMsg = err instanceof Error ? err.message : String(err);
       toast.error(`Đồng bộ thất bại: ${errMsg}`);
-      if (errMsg.includes("Bảng 'roster_cham_cong' chưa tồn tại") || errMsg.includes("Thiếu cột 'charge_to_center_mkt'")) {
+      if (
+        errMsg.includes("chưa tồn tại") || 
+        errMsg.includes("relation") || 
+        errMsg.includes("does not exist") ||
+        errMsg.includes("Thiếu cột") ||
+        errMsg.includes("unique_nv_ngay") ||
+        errMsg.includes("ràng buộc") ||
+        errMsg.includes("trùng lặp")
+      ) {
         setShowSqlDialog(true);
       }
     } finally {
@@ -621,6 +782,105 @@ export function TimesheetHub() {
   };
 
   const tableRef = useRef<any>(null);
+
+  const handleRestoreOriginal = useCallback(async () => {
+    const confirmReset = window.confirm(
+      "Bạn có chắc chắn muốn khôi phục dữ liệu ban đầu không? Toàn bộ thay đổi của bạn trên bảng Roster sẽ bị xóa và dữ liệu sẽ được đồng bộ lại với Supabase.",
+    );
+    if (!confirmReset) return;
+
+    if (!isSupabaseConfigured()) {
+      updateAppData((prev) => ({
+        ...prev,
+        Q_Roster: [...INITIAL_APP_DATA.Q_Roster],
+        Q_Staff: INITIAL_APP_DATA.Q_Staff ? [...INITIAL_APP_DATA.Q_Staff] : [],
+        Q_Salary_Scale: INITIAL_APP_DATA.Q_Salary_Scale ? [...INITIAL_APP_DATA.Q_Salary_Scale] : [],
+        Q_Cache: INITIAL_APP_DATA.Q_Cache ? [...INITIAL_APP_DATA.Q_Cache] : [],
+      }), true);
+      toast.success("Đã khôi phục dữ liệu ban đầu offline thành công!");
+      return;
+    }
+
+    const loadToastId = toast.loading("Đang khôi phục và đồng bộ dữ liệu với Supabase...");
+
+    try {
+      // 1. Clear old data on Supabase
+      await clearSupabaseData();
+
+      // 2. Sync Employees
+      const staffData = INITIAL_APP_DATA.Q_Staff || [];
+      if (staffData.length > 0) {
+        await syncEmployeesToSupabase(staffData);
+      }
+
+      // 3. Sync Salary Scales
+      const salaryData = INITIAL_APP_DATA.Q_Salary_Scale || [];
+      if (salaryData.length > 0) {
+        await syncSalaryScalesToSupabase(salaryData);
+      }
+
+      // 4. Sync Rosters
+      const rosterData = INITIAL_APP_DATA.Q_Roster || [];
+      if (rosterData.length > 0) {
+        await syncRosterToSupabase(rosterData, () => {});
+      }
+
+      // 5. Update Local App Data to match
+      updateAppData((prev) => ({
+        ...prev,
+        Q_Roster: [...rosterData],
+        Q_Staff: [...staffData],
+        Q_Salary_Scale: [...salaryData],
+        Q_Cache: INITIAL_APP_DATA.Q_Cache ? [...INITIAL_APP_DATA.Q_Cache] : [],
+      }), true);
+
+      toast.dismiss(loadToastId);
+      toast.success("Khôi phục và đồng bộ dữ liệu mẫu lên Supabase thành công!");
+    } catch (error: any) {
+      console.error("Lỗi khôi phục Supabase:", error);
+      toast.dismiss(loadToastId);
+      toast.error(`Khôi phục thất bại: ${error.message}`);
+      if (
+        error.message.includes("chưa tồn tại") || 
+        error.message.includes("relation") || 
+        error.message.includes("does not exist") ||
+        error.message.includes("unique_nv_ngay") ||
+        error.message.includes("ràng buộc") ||
+        error.message.includes("trùng lặp")
+      ) {
+        setShowSqlDialog(true);
+      }
+    }
+  }, [updateAppData]);
+
+  const handleRosterCellChange = useCallback((row: any, colKey: string, value: any) => {
+    updateAppData((prev) => {
+      const qRoster = prev.Q_Roster || [];
+      const updatedRoster = qRoster.map((r) => {
+        if (r._rowId === row._rowId) {
+          return {
+            ...r,
+            [colKey]: value,
+            ...(colKey === "ngay" ? { date: value } : {}),
+            ...(colKey === "date" ? { ngay: value } : {}),
+            ...(colKey === "class" ? { classCode: value } : {}),
+            ...(colKey === "classCode" ? { class: value } : {}),
+            ...(colKey === "gio_vao" ? { from: value } : {}),
+            ...(colKey === "from" ? { gio_vao: value } : {}),
+            ...(colKey === "gio_ra" ? { to: value } : {}),
+            ...(colKey === "to" ? { gio_ra: value } : {}),
+            ...(colKey === "notes" ? { notes: value } : {}),
+          };
+        }
+        return r;
+      });
+      return {
+        ...prev,
+        Q_Roster: updatedRoster,
+      };
+    });
+    toast.success("Đã cập nhật dữ liệu!");
+  }, [updateAppData]);
 
   return (
     <div className="flex-1 flex flex-col min-h-0 relative overflow-hidden p-8">
@@ -696,7 +956,7 @@ export function TimesheetHub() {
                                   <>
                                     <Icon className="w-4 h-4 group-hover:scale-110 transition-transform" />
                                     <span className="text-[0.75rem] font-bold uppercase tracking-widest whitespace-nowrap">
-                                      {active?.label}
+                                      {active?.label} {_tableFilteredCount !== null ? `(${_tableFilteredCount})` : ""}
                                     </span>
                                   </>
                                 );
@@ -741,7 +1001,13 @@ export function TimesheetHub() {
                         ))}
                       </DropdownMenuContent>
                     </DropdownMenu>
-
+                    <button
+                      onClick={handleRestoreOriginal}
+                      className="text-[10px] font-bold text-slate-400 hover:text-rose-500 uppercase transition-all duration-300 ml-4 flex items-center gap-1 cursor-pointer select-none"
+                    >
+                      <RefreshCw className={`w-2.5 h-2.5 shrink-0 ${isFetchingRealtime ? "animate-spin text-sky-500" : ""}`} />
+                      {isFetchingRealtime ? "Đang tải Supabase..." : "Khôi phục ban đầu"}
+                    </button>
                   </div>
                 </div>
 
@@ -1045,6 +1311,7 @@ export function TimesheetHub() {
                       <RosterRawTable 
                         data={searchData} 
                         onFilteredDataChange={(d) => setTableFilteredCount(d.length)}
+                        onCellChange={handleRosterCellChange}
                       />
                     ) : activeTab === "employee" ? (
                       <EmployeeTable 
@@ -1082,9 +1349,9 @@ export function TimesheetHub() {
         <DialogContent className="max-w-2xl bg-white rounded-3xl border-none shadow-2xl p-0 overflow-hidden">
           <div className="bg-sky-600 p-8 text-white">
             <DialogHeader>
-              <DialogTitle className="text-2xl font-black uppercase tracking-wider">Thiết lập Bảng Supabase</DialogTitle>
-              <DialogDescription className="text-sky-100 font-medium">
-                Bảng 'roster_cham_cong' chưa tồn tại hoặc thiếu cột dữ liệu. Vui lòng copy script bên dưới và chạy trong SQL Editor của Supabase để cập nhật cấu trúc bảng.
+              <DialogTitle className="text-2xl font-black uppercase tracking-wider">Thiết lập & Cập nhật Supabase</DialogTitle>
+              <DialogDescription className="text-sky-100 font-medium text-[11px] leading-relaxed">
+                Bảng 'roster_cham_cong' chưa tồn tại, thiếu cột (như charge_to_center_mkt) hoặc đang bị ràng buộc cũ (như unique_nv_ngay - giới hạn mỗi người 1 ca/ngày). Vui lòng copy toàn bộ script bên dưới và chạy trong SQL Editor của Supabase để cập nhật cấu trúc bảng chính xác nhất.
               </DialogDescription>
             </DialogHeader>
           </div>

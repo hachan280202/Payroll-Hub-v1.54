@@ -41,8 +41,6 @@ export const HoldAETable = forwardRef<any, HoldAETableProps>(
           let y = currentYear;
           if (m > currentMonthNum) {
             y = currentYear - 1;
-          } else if (m === 11 || m === 12) {
-            if (currentYear === 2026) y = 2025;
           }
           return y * 12 + m;
         }
@@ -52,8 +50,6 @@ export const HoldAETable = forwardRef<any, HoldAETableProps>(
           let y = currentYear;
           if (m > currentMonthNum) {
             y = currentYear - 1;
-          } else if (m === 11 || m === 12) {
-            if (currentYear === 2026) y = 2025;
           }
           return y * 12 + m;
         }
@@ -74,7 +70,7 @@ export const HoldAETable = forwardRef<any, HoldAETableProps>(
       const filteredRows = raw.data.filter((r: any) => {
         const rowMonth = r["Tháng báo cáo"] || r["_fileMonth"] || "";
         const rowLimit = parseToMonthIndex(rowMonth);
-        return rowLimit <= currentLimit;
+        return rowLimit === currentLimit;
       });
 
       return { ...raw, data: filteredRows };
@@ -452,6 +448,10 @@ export const HoldAETable = forwardRef<any, HoldAETableProps>(
           storageKey="master_ae_Hold_AE"
           hideSearch={true}
           showFooter={true}
+          totalCalculationOverride={(row: any, colKey: string) => {
+            if (colKey === "TOTAL PAYMENT" && row._isPastMonthHoldOrCancel) return 0;
+            return null;
+          }}
           headerClassName="bg-white border-b border-[#E2E8F0] text-[0.8em] font-black uppercase tracking-[0.15em] text-slate-500"
         />
       </div>

@@ -549,9 +549,9 @@ export function parseAnyDate(val: any, defaultYear?: number | null): Date | null
     if (!str) return null;
 
     // Remove day of week prefix like "Sat ", "Sun ", "Mon ", etc.
-    str = str.replace(/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun)[a-z]*\s+/i, "").trim();
+    str = str.replace(/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun)[a-z]*[,.\s]+/gi, "").trim();
     // Remove Vietnamese day of week prefix like "T2 ", "T3 ", ..., "T7 ", "CN "
-    str = str.replace(/^(T[2-7]|CN)\s+/i, "").trim();
+    str = str.replace(/^(T[2-7]|CN)\s+/gi, "").trim();
 
     // 0. Try Vietnamese MMM D, YYYY format: "Thg1 21, 2026" or "Tháng 1 21, 2026"
     const vnMmmPattern = /^(?:Thg|Tháng)\s*(\d{1,2})\s+(\d{1,2}),\s*(\d{4})$/i;

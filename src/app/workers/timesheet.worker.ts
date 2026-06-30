@@ -168,19 +168,19 @@ export function calculateTimesheet(params: any) {
       if (!effName) effName = empId;
     }
 
-    const rawType = String(getVal(t, ["type", "task type", "task", "loại", "loại hoạt động", "event type", "activity", "category", "task type name"]) || "").trim();
+    const rawType = String(getVal(t, ["type", "type code", "type_code", "typecode", "task type", "task", "loại", "loại hoạt động", "event type", "activity", "category", "task type name", "taskType"]) || "").trim();
     const rCen = String(getVal(t, ["center code", "office code", "l07", "center", "cơ sở", "trung tâm", "chi nhánh", "mã trung tâm"]) || "").trim();
     const rawChargeToCenter = String(getVal(t, ["charge to center mkt", "charge to center", "chargetocenter", "charge to center mkt name"]) || "").trim();
     const rawAeCode = String(getVal(t, ["mã ae", "ae", "ae code"]) || "").trim();
 
-    const rawClassCode = String(getVal(t, ["class code", "class", "lớp", "class name", "mã lớp", "tên lớp", "classcode", "code", "mã lớp học"]) || "");
+    const rawClassCode = String(getVal(t, ["class code", "class", "class_code", "classcode", "lớp", "class name", "mã lớp", "tên lớp", "code", "mã lớp học", "classCode"]) || "");
     const resolvedAuth = resolveL07Logic({ rawCenter: rCen, rawChargeToCenter, sourceFile: t._sourceFile || appData?.Q_RosterFileName || "", rawType, rawClassCode, rawAeCode, empId, staffLookup, normCenterCache }, TASK_COLUMNS);
     let { l07, aeCode, taskField, correctedType, correctedClass } = resolvedAuth;
     const { chargeToCenterMkt, isMktLocal } = resolvedAuth;
 
-    // Use corrected values if they exist, otherwise fallback to raw
-    const effectiveType = correctedType || rawType;
-    const effectiveClass = correctedClass || rawClassCode;
+    // Use corrected values directly as they default to raw inside resolveL07Logic
+    const effectiveType = correctedType;
+    const effectiveClass = correctedClass;
 
     const [yearStr, monthStr, dayStr] = rawDateStr.split("-");
     const dateStr = `${dayStr}/${monthStr}/${yearStr}`;

@@ -1,4 +1,4 @@
-import appLogo from "@/assets/images/regenerated_image_1782801979718.png";
+import appLogo from "@/assets/images/regenerated_image_1782821491957.png";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router";
@@ -27,7 +27,7 @@ import {
   parseMoneyToNumber,
   isMoneyColumn,
   autoMapColumns,
-  fetchGoogleSheetAsFile,
+  fetchWithBackoff,
 } from "../../lib/utils/data-utils";
 import {
   mapL07,
@@ -337,8 +337,25 @@ export function AEDataConfig({
     setIsFetchingLink(true);
     try {
       const currentRow = appData.Ae_Global_Inputs.find(r => r.id === activeLinkRowId);
-      const file = await fetchGoogleSheetAsFile(linkInput.trim(), currentRow?.name || "GoogleSheet.gsheet");
+      const response = await fetchWithBackoff(`/api/fetch-google-sheet?url=${encodeURIComponent(linkInput)}`);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Không thể tải dữ liệu. Hãy đảm bảo link đã được share.");
+      }
+      
+      const arrayBuffer = await response.arrayBuffer();
+      const blob = new Blob([arrayBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      
+      let baseName = currentRow?.name || `GoogleSheet_Export_${Date.now()}`;
+      if (baseName.endsWith(".csv") || baseName.endsWith(".xlsx") || baseName.endsWith(".xls") || baseName.endsWith(".gsheet")) {
+        baseName = baseName.substring(0, baseName.lastIndexOf("."));
+      }
+      const fileName = `${baseName}.xlsx`;
+      const file = new File([blob], fileName, { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      
+      // Map file and upload to the specific row
       handleFileUpload(activeLinkRowId, file);
+      
       toast.success("Đã tải dữ liệu từ Google Sheet!");
       setLinkDialogOpen(false);
       setLinkInput("");
@@ -364,13 +381,15 @@ export function AEDataConfig({
           if (url.searchParams.has("id")) {
             folderId = url.searchParams.get("id") || folderId;
           }
-        } catch { /* ignore */ }
+        } catch {
+          // Ignore invalid URL
+        }
       }
 
-      const response = await fetch(`/api/drive-folder-files?folderId=${encodeURIComponent(folderId)}`);
+      const response = await fetchWithBackoff(`/api/drive-folder-files?folderId=${encodeURIComponent(folderId)}`);
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.error || "Không thể lấy danh sách file từ thư mục. Vui lòng kiểm tra lại link hoặc quyền chia sẻ.");
+        throw new Error(errData.error || "Không thể lấy danh sách file từ thư mục. Vui lòng kiểm tra lại link hoặc file credentials.json.");
       }
 
       const data = await response.json();
@@ -378,35 +397,26 @@ export function AEDataConfig({
         throw new Error("Không tìm thấy file nào trong thư mục này.");
       }
 
-      // Filter out files with "copy" in name
-      const driveFiles = (data.files || []).filter((f: any) => {
-        const name = String(f.name || "").toLowerCase();
-        return !name.includes("copy");
-      });
-
-      if (driveFiles.length === 0 && data.files.length > 0) {
-        throw new Error("Tất cả các file trong thư mục đều là file 'copy' nên hệ thống tự động bỏ qua.");
-      }
-
       const newPending: PendingUpload[] = [];
-      driveFiles.forEach((f: any) => {
+      data.files.forEach((f: any) => {
         const sheetUrl = `https://docs.google.com/spreadsheets/d/${f.id}`;
-        // Create a small JSON file representing the link so our parser can fetch it
         const fileContent = JSON.stringify({ url: sheetUrl });
         const blob = new Blob([fileContent], { type: 'application/json' });
         
         let name = f.name || `GoogleSheet_${f.id}`;
-        if (!name.toLowerCase().endsWith(".gsheet")) {
-          name = name.replace(/\.(xlsx|xls|csv)$/i, "") + ".gsheet";
+        if (!name.endsWith(".gsheet") && !name.endsWith(".xlsx") && !name.endsWith(".xls")) {
+          name += ".gsheet";
+        } else if (name.endsWith(".xlsx") || name.endsWith(".xls")) {
+          // If it already has an extension but is fetched via Drive, just append .gsheet so our parser treats it as URL
+          // Wait, actually Google Drive might return name with .xlsx, but we want it to act like .gsheet 
+          name = name.replace(/\.(xlsx|xls)$/i, ".gsheet");
         }
+
         const file = new File([blob], name, { type: 'application/json' });
 
-        // Match with existing rows
-        const existingRow = appData.Ae_Global_Inputs.find((row) => {
-          const normRow = (row.name || "").toLowerCase();
-          const normFile = name.toLowerCase();
-          return normRow === normFile || normFile.includes(normRow) || normRow.includes(normFile.replace(".gsheet", ""));
-        });
+        const existingRow = appData.Ae_Global_Inputs.find(
+          (row) => row.name === name || row.name === name.replace(".gsheet", ".csv"),
+        );
 
         if (existingRow) {
           newPending.push({ file, existingRowId: existingRow.id });
@@ -419,7 +429,7 @@ export function AEDataConfig({
       setShowDialog(true);
       setFolderLinkDialogOpen(false);
       setFolderLinkInput("");
-      toast.success(`Đã tìm thấy ${driveFiles.length} file hợp lệ trong thư mục.`);
+      toast.success(`Đã tìm thấy ${data.files.length} file trong thư mục.`);
 
     } catch (error: any) {
       toast.error(error.message || "Lỗi tải dữ liệu từ Google Drive Folder");
@@ -427,18 +437,13 @@ export function AEDataConfig({
       setIsFetchingFolder(false);
     }
   };
+
   const handleMultiUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
 
-    const fileList = Array.from(files).filter(f => !f.name.toLowerCase().includes("copy"));
-    if (fileList.length === 0 && files.length > 0) {
-      toast.info("Tất cả các file đã chọn đều là file copy nên hệ thống tự động bỏ qua.");
-      return;
-    }
-
     const newPending: PendingUpload[] = [];
-    fileList.forEach((file) => {
+    Array.from(files).forEach((file) => {
       const existingRow = appData.Ae_Global_Inputs.find(
         (row) => row.name === file.name,
       );
@@ -481,11 +486,9 @@ export function AEDataConfig({
       return "";
     };
 
-    for (let i = 0; i < choices.length; i++) {
-      const choice = choices[i];
+    for (const choice of choices) {
       if (choice.action === "skip") continue;
 
-      setProcessingMessage(`Đang map cột file ${i + 1}/${choices.length}: ${choice.file.name}...`);
       const mapping = await autoMapColumns(choice.file, masterAeFields);
       const guessedBank = guessBank(choice.file.name);
 
@@ -506,11 +509,6 @@ export function AEDataConfig({
           month: parseMonthFromFileName(choice.file.name) || appData.globalMonth || "",
           columnMapping: mapping,
         });
-      }
-
-      // Add delay between fetches to avoid rate limits
-      if (i < choices.length - 1) {
-        await new Promise((resolve) => setTimeout(resolve, 800));
       }
     }
 
@@ -652,11 +650,7 @@ export function AEDataConfig({
         setProcessingMessage(
           `Đang xử lý file ${i + 1}/${targets.length}: ${item.name}...`,
         );
-        
-        // Sequential delay of 800ms between processing files (especially for fetching)
-        if (i > 0) {
-          await new Promise((resolve) => setTimeout(resolve, 800));
-        }
+        await new Promise((resolve) => setTimeout(resolve, 10));
 
         updateAppData(
           (prev) => ({
@@ -1826,29 +1820,24 @@ export function AEDataConfig({
       variants={containerVariants}
       initial="hidden"
       animate="visible"
-      className="page-master-ae flex-1 flex flex-col min-h-0 bg-transparent p-4 md:p-8 gap-8 items-center overflow-auto custom-scrollbar"
+      className="flex-1 flex flex-col min-h-0 bg-transparent p-4 md:p-8 gap-8 items-center overflow-auto custom-scrollbar"
     >
       {/* Main Content Card */}
-      <div className="bg-white soft-card force-light flex-1 flex flex-col min-h-0 w-full relative overflow-hidden rounded-[54px] border border-purple-100 shadow-sm">
-        <div className="absolute inset-0 bg-pattern-purple opacity-[0.08] pointer-events-none" />
+      <div className="bg-white soft-card force-light flex-1 flex flex-col min-h-0 w-full relative overflow-hidden">
+        <div className="absolute inset-0 striped-pattern opacity-[0.05] pointer-events-none" />
 
         {/* Integrated Header & Controls */}
-        <div className="px-8 py-8 flex flex-col md:flex-row items-center justify-between gap-6 bg-purple-50/10 shrink-0 border-none relative z-10 overflow-hidden rounded-t-[54px]">
-          <div className="absolute inset-0 bg-pattern-purple opacity-[0.05] pointer-events-none rounded-t-[54px]" />
+        <div className="px-8 py-8 flex flex-col md:flex-row items-center justify-between gap-6 bg-muted/20 shrink-0 border-b border-border relative z-10 overflow-hidden">
+          <div className="absolute inset-0 striped-pattern-sage opacity-[0.1] pointer-events-none" />
           <div className="flex items-center gap-5 relative z-10">
             <div className="w-14 h-14 bg-transparent rounded-none shrink-0 relative overflow-hidden">
               <img src={appLogo} alt="Logo" className="w-full h-full object-contain rounded-none" style={{ imageRendering: '-webkit-optimize-contrast' }} />
             </div>
 
             <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="px-2 py-0.5 rounded bg-purple-100 text-purple-700 text-[10px] font-black uppercase tracking-widest border border-purple-200">
-                  MASTER AE CONFIG
-                </span>
-              </div>
               <h2 className="text-3xl font-normal font-serif text-foreground tracking-tight flex items-end gap-1" style={{ fontSize: "25px", paddingTop: "0px", paddingBottom: "0px" }}>
                 Files from{" "}
-                <span className="not-italic font-script text-purple-600 text-4xl lowercase inline-block transform -translate-y-0.5">
+                <span className="not-italic font-script text-primary text-4xl lowercase inline-block transform -translate-y-0.5">
                   AE
                 </span>
               </h2>
@@ -2001,7 +1990,7 @@ export function AEDataConfig({
           </div>
         )}
 
-        <div id="master-ae-table-wrapper" className="flex-1 min-h-0 p-2 md:p-4 flex flex-col w-full font-[family-name:var(--font-table,var(--font-main))]">
+        <div className="flex-1 min-h-0 p-2 md:p-4 flex flex-col w-full font-[family-name:var(--font-table,var(--font-main))]">
           <div className="flex-1 min-h-0 w-full overflow-auto custom-scrollbar data-table-wrapper rounded-[var(--radius)]">
             <table className="w-full border-separate border-spacing-0 table-auto text-left border-l border-t border-[#E2E8F0]">
               <thead>

@@ -1079,6 +1079,7 @@ export function BulkPayment({
       
       const newData = [...data];
       newData.splice(rowIndex, 1);
+      // Re-index Payment Serial Number if it exists
       const updatedData = newData.map((row, idx) => ({
         ...row,
         "Payment Serial Number": idx + 1,
@@ -1086,19 +1087,6 @@ export function BulkPayment({
       return { ...prev, BankExport: { ...prev.BankExport, data: updatedData } };
     });
     toast.success("Đã xóa dòng dữ liệu");
-  };
-
-  const handleDeleteRows = (rowsToDelete: any[]) => {
-    if (!rowsToDelete?.length) return;
-    updateAppData((prev) => {
-      const data = prev.BankExport.data;
-      const newData = data.filter(r => !rowsToDelete.includes(r));
-      const updatedData = newData.map((row, idx) => ({
-        ...row,
-        "Payment Serial Number": idx + 1,
-      }));
-      return { ...prev, BankExport: { ...prev.BankExport, data: updatedData } };
-    });
   };
 
   const {
@@ -1405,7 +1393,6 @@ export function BulkPayment({
                 data={appData.BankExport.data}
                 onCellChange={handleCellChange}
                 onDeleteRow={handleDeleteRow}
-                onDeleteRows={handleDeleteRows}
                 isEditable={true}
                 externalSearchTerm={debouncedSearch}
                 onExternalSearchChange={setSearchTerm}

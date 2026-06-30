@@ -369,10 +369,10 @@ export function HoldAddDashboard() {
         const m = parseInt(tMatch[1], 10);
         if (m >= 1 && m <= 12) {
           let y = currentPeriodYearNum;
-          if (m > currentPeriodMonthNum) {
+          if (m === 11 || m === 12) {
+            y = currentPeriodYearNum === 2025 ? 2025 : (currentPeriodYearNum === 2026 ? 2025 : currentPeriodYearNum);
+          } else if (m > currentPeriodMonthNum && (currentPeriodYearNum === 2025 || currentPeriodYearNum === 2026)) {
             y = currentPeriodYearNum - 1;
-          } else if (m === 11 || m === 12) {
-            if (currentPeriodYearNum === 2026) y = 2025;
           }
           return `Tháng ${m}/${y}`;
         }
@@ -895,31 +895,17 @@ export function HoldAddDashboard() {
       if (nv.includes("cancel") || st.includes("cancel") || ss.includes("cancel") || ttttUpper.includes("CANCEL")) {
         type = "cancel";
       }
-
-      // Normalize both for comparison (remove extra spaces, zero-pad months)
-      const normalizeMonth = (str: string | undefined) => {
-        if (!str) return "";
-        const cleaned = str.replace(/\s+/g, "").toLowerCase();
-        return cleaned.replace(/tháng0?(\d+)/i, "tháng$1").replace(/^(\d+)\.(\d+)$/, "tháng$1/$2");
-      };
-      
-      const normReportMonth = normalizeMonth(r["Tháng báo cáo"] || r["_fileMonth"] || r["Tháng"]);
-      const normCardSelectedMonth = normalizeMonth(currentPeriodVal);
-
-      // Rule: Lương hold của tháng = Nghiệp vụ HOLD + Sheet Source chứa tháng báo cáo hiện tại + Tháng báo cáo = card chọn
-      // AND Total Payment must be negative (meaning it's being held)
-      if (nv === "hold" || nv.includes("hold") || st.includes("hold") || ss.includes("hold")) {
-        // If it's the current month's hold
-        if (normReportMonth === normCardSelectedMonth && ss.includes(normCardSelectedMonth.replace("tháng", ""))) {
-          type = "hold";
-        } else {
-          type = "hold"; 
-        }
-      }
-      
       // Khong dua gia tri sheet 1 ae vao cot luong hold
-      if (ss.includes("sheet 1 ae")) {
+      else if (ss.includes("sheet 1 ae")) {
+        // Not considered hold
         type = "other";
+      }
+      // If Trạng thái or Nghiệp vụ contains hold but not add
+      else if (
+        (nv === "hold" || nv.includes("hold") || st.includes("hold") || ss.includes("hold")) &&
+        !(nv.includes("add") || st.includes("add") || ss.includes("add"))
+      ) {
+        type = "hold";
       }
 
       // Khoản add phải có tháng báo cáo trùng card chọn tháng
@@ -955,9 +941,6 @@ export function HoldAddDashboard() {
           r["Payment Amount"] ||
           0,
       );
-
-      // Only count into 'chi' if it's negative total payment for HOLD
-      // Or follow the user's literal rule for 'chi' column
 
       if (isPastMonthHold(r, currentPeriodMonthNum, currentPeriodYearNum) && type !== "cancel" && !isTargetHoldCancel) {
         tpRaw = 0;
@@ -1396,13 +1379,6 @@ export function HoldAddDashboard() {
       );
     }
 
-    if (yearFilter && yearFilter !== "all") {
-      processedResult = processedResult.filter((v) => {
-        const m = v.displayMonth || v.month || "";
-        return m.includes(`/${yearFilter}`);
-      });
-    }
-
     return processedResult.sort((a, b) => {
       const mA = a.reportMonth === currentPeriod ? 99999999 : getMonthNum(a.month);
       const mB = b.reportMonth === currentPeriod ? 99999999 : getMonthNum(b.month);
@@ -1440,8 +1416,6 @@ export function HoldAddDashboard() {
     isPeriodSaved,
     currentPeriodMonthNum,
     currentPeriodYearNum,
-    currentPeriodVal,
-    yearFilter,
   ]);
 
   const toggleConfirm = (id: string, e: React.MouseEvent) => {
@@ -1901,6 +1875,36 @@ export function HoldAddDashboard() {
     };
   }, [monthKeys, computedMonthTotals, data, grouped, getMonthNum, currentPeriod]);
 
+  const normalizeMonthLabel = useCallback(
+    (value?: string) => {
+      if (!value) return "";
+      const extracted = extractMonth(value);
+      if (extracted) return extracted;
+      return String(value).trim();
+    },
+    [extractMonth],
+  );
+
+  const isCurrentPeriodRow = useCallback(
+    (row: any) => {
+      const candidates = [
+        row?.reportMonth,
+        row?.month,
+        row?.displayMonth,
+        row?.customMonthDisplay,
+      ];
+      return candidates.some(
+        (candidate) =>
+          normalizeMonthLabel(String(candidate || "")) === currentPeriod,
+      );
+    },
+    [currentPeriod, normalizeMonthLabel],
+  );
+
+  const currentPeriodRows = useMemo(() => {
+    return data.filter(isCurrentPeriodRow);
+  }, [data, isCurrentPeriodRow]);
+
   const countBusinesses = useCallback((rows: BuRow[]) => {
     return new Set(
       rows
@@ -1908,6 +1912,66 @@ export function HoldAddDashboard() {
         .map((row) => row.bu),
     ).size;
   }, []);
+
+  const grandAddPillValue = useMemo(() => {
+    return currentPeriodRows
+      .filter((e) => {
+        const idLower = String(e.id).toLowerCase();
+        const display = String(
+          e.customMonthDisplay || e.month || "",
+        ).toUpperCase();
+        return (
+          idLower.includes("_add") ||
+          idLower.includes("add") ||
+          display.includes("ADD")
+        );
+      })
+      .reduce((s, e) => s + e.thu + (e.add || 0), 0);
+  }, [currentPeriodRows]);
+
+  const chiPhiLuongTaPillValue = useMemo(() => {
+    return currentPeriodRows
+      .filter(
+        (e) =>
+          !e.id.includes("_hold") &&
+          !e.id.includes("_add") &&
+          !e.id.includes("_cancel") &&
+          !e.id.includes("_past_"),
+      )
+      .reduce((s, e) => s + e.thu, 0);
+  }, [currentPeriodRows]);
+
+  const holdPillValue = useMemo(() => {
+    return currentPeriodRows
+      .filter((e) => {
+        const idLower = String(e.id).toLowerCase();
+        const display = String(
+          e.customMonthDisplay || e.month || "",
+        ).toUpperCase();
+        return (
+          idLower.includes("_hold") ||
+          idLower.includes("hold") ||
+          display.includes("HOLD")
+        );
+      })
+      .reduce((s, e) => s + e.chi + (e.hold || 0), 0);
+  }, [currentPeriodRows]);
+
+  const cancelPillValue = useMemo(() => {
+    return currentPeriodRows
+      .filter((e) => {
+        const idLower = String(e.id).toLowerCase();
+        const display = String(
+          e.customMonthDisplay || e.month || "",
+        ).toUpperCase();
+        return (
+          idLower.includes("_cancel") ||
+          idLower.includes("cancel") ||
+          display.includes("CANCEL")
+        );
+      })
+      .reduce((s, e) => s + Math.abs(e.chi) + (e.cancel || 0), 0);
+  }, [currentPeriodRows]);
 
   return (
     <div className="h-full flex flex-col overflow-hidden bg-transparent w-full">
@@ -1944,6 +2008,41 @@ export function HoldAddDashboard() {
               >
                 Trial Balance
               </h1>
+            </div>
+            {/* Summary pills */}
+            <div className="flex gap-2 ml-4 flex-wrap items-center">
+              <span className="text-[11px] bg-secondary border border-border rounded-full px-3 py-1 text-foreground flex items-center gap-1.5 shadow-sm">
+                <span className="text-muted-foreground font-medium">
+                  CHI PHÍ LƯƠNG TA
+                </span>
+                <span
+                  className="font-nunito font-bold text-emerald-600"
+                  style={{ color: "#4e1c2d" }}
+                >
+                  {fmt(chiPhiLuongTaPillValue)}
+                </span>?</span>
+              <span className="text-[11px] bg-secondary border border-border rounded-full px-3 py-1 text-foreground flex items-center gap-1.5 shadow-sm">
+                <span className="text-muted-foreground font-medium">HOLD</span>
+                <span className="font-nunito font-bold text-rose-600">
+                  {fmt(holdPillValue)}
+                </span>
+              </span>
+              <span className="text-[11px] bg-secondary border border-border rounded-full px-3 py-1 text-foreground flex items-center gap-1.5 shadow-sm">
+                <span className="text-muted-foreground font-medium">Add</span>
+                <span
+                  className="font-nunito font-bold text-blue-600"
+                  style={{ color: "#68182e" }}
+                >
+                  {fmt(grandAddPillValue)}
+                </span>?</span>
+              <span className="text-[11px] bg-secondary border border-border rounded-full px-3 py-1 text-foreground flex items-center gap-1.5 shadow-sm">
+                <span className="text-muted-foreground font-medium">Cancel</span>
+                <span
+                  className="font-nunito font-bold text-orange-600"
+                  style={{ color: "#e65100" }}
+                >
+                  {fmt(cancelPillValue)}
+                </span>?</span>
             </div>
           </div>
           {/* Controls */}

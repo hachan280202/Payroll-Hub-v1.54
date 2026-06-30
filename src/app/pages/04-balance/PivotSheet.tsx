@@ -1835,12 +1835,12 @@ export function PivotSheet() {
                       className="w-full text-left border-separate min-w-max relative bg-white border border-[#E2E8F0]"
                       style={{ tableLayout: "fixed", borderSpacing: 0 }}
                     >
-                      <thead className="sticky top-0 z-[100] text-primary bg-[#F3EFE0] border-b border-[#E2E8F0]">
-                        <tr className="bg-[#F3EFE0] border-b border-[#E2E8F0]">
+                      <thead className="sticky top-0 z-[100] text-slate-500 bg-white border-b border-[#E2E8F0]">
+                        <tr className="bg-white border-b border-[#E2E8F0]">
                           <th
                             rowSpan={2}
                             style={{ width: "120px" }}
-                            className="border-r border-b border-[#E2E8F0] px-4 text-center text-[11px] font-bold uppercase tracking-widest text-primary bg-[#F3EFE0] shadow-[inset_-1px_0_0_#E2E8F0,inset_0_-1px_0_#E2E8F0]"
+                            className="border-r border-b border-[#E2E8F0] px-4 text-center text-[11px] font-black uppercase tracking-widest text-slate-500 bg-white shadow-[inset_-1px_0_0_#E2E8F0,inset_0_-1px_0_#E2E8F0]"
                           >
                             <div className="flex items-center justify-between gap-1 group/header w-full">
                               <input
@@ -1848,7 +1848,7 @@ export function PivotSheet() {
                                 value={headerValues["Business"]}
                                 onChange={(e) => setHeaderValues(prev => ({...prev, Business: e.target.value}))}
                                 onBlur={(e) => handleUpdateHeaderBlur("Business", e.target.value)}
-                                className="bg-transparent border-none outline-none w-full text-left text-[11px] font-bold tracking-widest text-[#475569] cursor-pointer focus:cursor-text uppercase placeholder:text-slate-400"
+                                className="bg-transparent border-none outline-none w-full text-left text-[11px] font-bold tracking-widest text-slate-500 cursor-pointer focus:cursor-text uppercase placeholder:text-slate-400"
                                 placeholder="..."
                               />
                               <button
@@ -1862,7 +1862,7 @@ export function PivotSheet() {
                           <th
                             rowSpan={2}
                             style={{ width: "200px" }}
-                            className="border-r border-b border-[#E2E8F0] px-4 text-center text-[11px] font-bold uppercase tracking-widest text-primary bg-[#F3EFE0] shadow-[inset_-1px_0_0_#E2E8F0,inset_0_-1px_0_#E2E8F0]"
+                            className="border-r border-b border-[#E2E8F0] px-4 text-center text-[11px] font-black uppercase tracking-widest text-slate-500 bg-white shadow-[inset_-1px_0_0_#E2E8F0,inset_0_-1px_0_#E2E8F0]"
                           >
                             <div className="flex items-center justify-between gap-1 group/header w-full">
                               <input
@@ -1870,7 +1870,7 @@ export function PivotSheet() {
                                 value={headerValues["L07"]}
                                 onChange={(e) => setHeaderValues(prev => ({...prev, L07: e.target.value}))}
                                 onBlur={(e) => handleUpdateHeaderBlur("L07", e.target.value)}
-                                className="bg-transparent border-none outline-none w-full text-center text-[11px] font-bold tracking-widest text-[#475569] cursor-pointer focus:cursor-text uppercase placeholder:text-slate-400"
+                                className="bg-transparent border-none outline-none w-full text-center text-[11px] font-bold tracking-widest text-slate-500 cursor-pointer focus:cursor-text uppercase placeholder:text-slate-400"
                                 placeholder="..."
                               />
                               <button
@@ -1885,13 +1885,13 @@ export function PivotSheet() {
                             <th
                               key={c.key}
                               style={{ width: dataColWidth }}
-                              className="border-b border-r border-[#E2E8F0] text-center px-1 py-3 text-[11px] font-bold uppercase tracking-widest text-primary bg-[#F3EFE0] shadow-[inset_-1px_0_0_#E2E8F0]"
+                              className="border-b border-r border-[#E2E8F0] text-center px-1 py-3 text-[11px] font-black uppercase tracking-widest text-slate-500 bg-white shadow-[inset_-1px_0_0_#E2E8F0]"
                             >
                               <input
                                 value={chargeCodeValues[c.key]}
                                 onChange={(e) => setChargeCodeValues(prev => ({...prev, [c.key]: e.target.value}))}
                                 onBlur={(e) => handleUpdateChargeCodeBlur(c.key, e.target.value)}
-                                className="bg-transparent border-none outline-none w-full text-center text-[11px] font-bold tracking-widest text-primary cursor-pointer focus:cursor-text uppercase placeholder:text-slate-400"
+                                className="bg-transparent border-none outline-none w-full text-center text-[11px] font-bold tracking-widest text-slate-500 cursor-pointer focus:cursor-text uppercase placeholder:text-slate-400"
                                 placeholder="..."
                               />
                             </th>
@@ -1899,14 +1899,14 @@ export function PivotSheet() {
                           <th
                             rowSpan={2}
                             style={{ width: "150px" }}
-                            className="border-r border-b border-[#E2E8F0] text-center px-2 text-[11px] font-bold uppercase tracking-widest text-primary bg-[#F3EFE0] shadow-[inset_-1px_0_0_#E2E8F0,inset_0_-1px_0_#E2E8F0]"
+                            className="border-r border-b border-[#E2E8F0] text-center px-2 text-[11px] font-black uppercase tracking-widest text-slate-500 bg-white shadow-[inset_-1px_0_0_#E2E8F0,inset_0_-1px_0_#E2E8F0]"
                           >
                             <input
                               aria-label="Tên cột Tổng cộng"
                               value={headerValues["GRAND_TOTAL"]}
                               onChange={(e) => setHeaderValues(prev => ({...prev, GRAND_TOTAL: e.target.value}))}
                               onBlur={(e) => handleUpdateHeaderBlur("GRAND_TOTAL", e.target.value)}
-                              className="bg-transparent border-none outline-none w-full text-center text-[11px] font-bold tracking-widest text-primary cursor-pointer focus:cursor-text uppercase p-1 placeholder:text-slate-400"
+                              className="bg-transparent border-none outline-none w-full text-center text-[11px] font-bold tracking-widest text-slate-500 cursor-pointer focus:cursor-text uppercase p-1 placeholder:text-slate-400"
                               placeholder="..."
                             />
                           </th>
@@ -1930,13 +1930,13 @@ export function PivotSheet() {
                           )}
 
                         </tr>
-                        <tr className="bg-[#F3EFE0] border-b border-[#E2E8F0]">
+                        <tr className="bg-white border-b border-[#E2E8F0]">
                           {pivotData.activeCols.map((c) => (
                             <th
                               key={c.key}
                               data-colkey={c.key}
                               style={{ width: dataColWidth }}
-                              className="border-r border-b border-[#E2E8F0] text-center px-1 pb-3 pt-1 text-[11px] font-bold tracking-widest text-slate-400 bg-[#F3EFE0] shadow-[inset_-1px_0_0_#E2E8F0,inset_0_-1px_0_#E2E8F0]"
+                              className="border-r border-b border-[#E2E8F0] text-center px-1 pb-3 pt-1 text-[11px] font-black tracking-widest text-slate-500 bg-white shadow-[inset_-1px_0_0_#E2E8F0,inset_0_-1px_0_#E2E8F0]"
                             >
                               <div className="flex items-center justify-center gap-1 group/sub relative pr-4">
                                 <button
@@ -2058,11 +2058,11 @@ export function PivotSheet() {
                         })}
                       </tbody>
                       {uiSettings.showGrandTotals !== false && (
-                        <tfoot className="sticky bottom-0 z-[42] bg-[#fcdde1] font-bold border-t-2 border-[#E2E8F0]">
-                          <tr>
+                        <tfoot className="sticky bottom-0 z-[42] bg-slate-50 font-bold border-t-2 border-[#E2E8F0]">
+                          <tr className="bg-slate-50">
                             <td
                               colSpan={2}
-                              className="px-6 py-4 text-right text-[13px] font-bold uppercase tracking-widest text-[#0f172a] border-r border-b border-[#E2E8F0] bg-[#fcdde1]"
+                              className="px-6 py-4 text-right text-[13px] font-black uppercase tracking-widest text-slate-800 border-r border-b border-[#E2E8F0] bg-slate-50"
                             >
                               <div className="flex items-center justify-end gap-3 font-sans font-black">
                                 <span className="uppercase tracking-widest">TỔNG CỘNG CHUNG</span>
@@ -2071,20 +2071,20 @@ export function PivotSheet() {
                             {pivotData.activeCols.map((c) => (
                               <td
                                 key={c.key}
-                                className="px-3 py-4 text-right text-[13px] font-bold text-[#0f172a] border-r border-b border-[#E2E8F0] bg-[#fcdde1]"
+                                className="px-3 py-4 text-right text-[13px] font-black text-slate-800 border-r border-b border-[#E2E8F0] bg-slate-50"
                               >
                                 {formatMoneyVND(pivotData.colTotals[c.key])}
                               </td>
                             ))}
-                            <td className="px-3 py-4 text-right text-[13px] font-bold text-[#0f172a] border-r border-b border-[#E2E8F0] bg-[#fcdde1]">
+                            <td className="px-3 py-4 text-right text-[13px] font-black text-slate-800 border-r border-b border-[#E2E8F0] bg-slate-50">
                               {formatMoneyVND(pivotData.grandTotal)}
                             </td>
                             {uiSettings.showMktCols !== false && (
                               <>
-                                <td className="px-3 py-4 text-right text-[13px] font-bold text-[#0f172a] bg-[#F3EFE0] border-r border-b border-[#E2E8F0]">
+                                <td className="px-3 py-4 text-right text-[13px] font-black text-slate-800 bg-slate-50 border-r border-b border-[#E2E8F0]">
                                   {formatMoneyVND(pivotData.mktGrandTotal)}
                                 </td>
-                                <td className="px-3 py-4 text-right text-[13px] font-bold text-[#0f172a] bg-[#F3EFE0] border-r border-b border-[#E2E8F0]">
+                                <td className="px-3 py-4 text-right text-[13px] font-black text-slate-800 bg-slate-50 border-r border-b border-[#E2E8F0]">
                                   {formatMoneyVND(pivotData.northMktGrandTotal)}
                                 </td>
                               </>

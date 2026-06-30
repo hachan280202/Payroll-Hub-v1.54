@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
-import appLogo from "@/assets/images/regenerated_image_1782801979718.png";
+import appLogo from "@/assets/images/regenerated_image_1782821491957.png";
 import React, { useState, useMemo, useEffect, useCallback, useTransition, useDeferredValue } from "react";
 import { useNavigate, useLocation } from "react-router";
 import { useAppData } from "../../lib/contexts/AppDataContext";

@@ -1,4 +1,4 @@
-import appLogo from "@/assets/images/regenerated_image_1782801979718.png";
+import appLogo from "@/assets/images/regenerated_image_1782821491957.png";
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import {
   FileSpreadsheet,
@@ -92,8 +92,8 @@ const mapExcelRosterRow = (row: Record<string, unknown>, fileName?: string) => {
   const full_name = String(getVal(row, ["full name", "name", "teacher name", "tên", "họ và tên", "họ tên"]) || "").trim();
   const ngayRaw = getVal(row, ["date", "ngay", "ngày", "tk_date", "session date", "sessiondate", "ngày học", "scheduledate", "ngày làm việc", "ngày tháng"]);
   const ngay = ngayRaw !== undefined && ngayRaw !== null ? String(ngayRaw).trim() : "";
-  const type = String(getVal(row, ["type", "task type", "task", "loại", "loại hoạt động", "event type", "activity", "category", "task type name"]) || "").trim();
-  const className = String(getVal(row, ["class", "class code", "lớp", "class name", "mã lớp", "tên lớp", "classcode", "code", "mã lớp học"]) || "").trim();
+  const type = String(getVal(row, ["type", "type code", "type_code", "typecode", "task type", "task", "loại", "loại hoạt động", "event type", "activity", "category", "task type name", "taskType"]) || "").trim();
+  const className = String(getVal(row, ["class", "class code", "class_code", "classcode", "lớp", "class name", "mã lớp", "tên lớp", "code", "mã lớp học", "classCode"]) || "").trim();
   const gio_vao = String(getVal(row, ["from", "start", "start time", "từ", "giờ bắt đầu"]) || "").trim();
   const gio_ra = String(getVal(row, ["to", "end", "end time", "đến", "giờ kết thúc"]) || "").trim();
   

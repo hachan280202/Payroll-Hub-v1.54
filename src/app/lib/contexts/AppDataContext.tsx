@@ -24,8 +24,6 @@ const STORAGE_KEY = "PayrollApp_Data";
 
 // ─── Split into 2 contexts to avoid re-rendering data consumers on meta changes ───
 
-// ─── Split into 2 contexts to avoid re-rendering data consumers on meta changes ───
-
 interface AppDataCtx {
   appData: AppData;
   isLoading: boolean;
@@ -108,26 +106,6 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
             delete saved.SavedBal_PayrollTrial["Tháng 01/2026"];
             loadedAndReset = true;
           }
-          // Prune excessive cached Supabase rows to un-freeze the UI if they previously pulled too much data
-          if (saved.Q_Roster && Array.isArray(saved.Q_Roster)) {
-            const supabaseRows = saved.Q_Roster.filter((r: any) => r._rowId === "supabase-sync");
-            if (supabaseRows.length > 1000) {
-              const nonSupabaseRows = saved.Q_Roster.filter((r: any) => r._rowId !== "supabase-sync");
-              const limitedSupabaseRows = supabaseRows.slice(-1000);
-              saved.Q_Roster = [...nonSupabaseRows, ...limitedSupabaseRows];
-              loadedAndReset = true;
-            }
-          }
-          if (saved.Q_Staff && Array.isArray(saved.Q_Staff)) {
-            const supabaseRows = saved.Q_Staff.filter((r: any) => r._rowId === "supabase-sync");
-            if (supabaseRows.length > 1000) {
-              const nonSupabaseRows = saved.Q_Staff.filter((r: any) => r._rowId !== "supabase-sync");
-              const limitedSupabaseRows = supabaseRows.slice(-1000);
-              saved.Q_Staff = [...nonSupabaseRows, ...limitedSupabaseRows];
-              loadedAndReset = true;
-            }
-          }
-
           if (loadedAndReset) {
             await localforage.setItem(STORAGE_KEY, saved);
           }
@@ -400,6 +378,11 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     const present = state.present;
     if (!present.Hold_AE || !present.Hold_AE.data) return present;
 
+    const currentPeriodParts = (present.globalMonth || "03.2026").split(".");
+    const currentMonthNum = parseInt(currentPeriodParts[0], 10) || 3;
+    const currentYearNum = parseInt(currentPeriodParts[1], 10) || 2026;
+    const currentTotal = currentYearNum * 12 + currentMonthNum;
+
     // First compute userLedgers
     const ledgers: Record<
       string,
@@ -461,6 +444,36 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       const isHold = label.includes("HOLD") || upNvu.includes("HOLD");
       const isCancel = label.includes("CANCEL") || upNvu.includes("CANCEL");
       const isAdd = label.includes("ADD") || upNvu.includes("ADD") || (!isHold && !isCancel && val > 0);
+      
+      // Determine month of the row
+      let itemMonthNum = currentMonthNum;
+      let itemYearNum = currentYearNum;
+      const originMonthStr = String(row["Tháng"] || row["_fileMonth"] || row["Tháng báo cáo"] || "").trim();
+      
+      const matchMonthYear = originMonthStr.match(/(?:THÁNG|THANG|T)?\s*(\d{1,2})[./\- ]\s*(\d{4})/i);
+      const matchMonthDotYear = originMonthStr.match(/(\d{2})\.(\d{4})/);
+      if (matchMonthYear) {
+        itemMonthNum = parseInt(matchMonthYear[1], 10);
+        itemYearNum = parseInt(matchMonthYear[2], 10);
+      } else if (matchMonthDotYear) {
+        itemMonthNum = parseInt(matchMonthDotYear[1], 10);
+        itemYearNum = parseInt(matchMonthDotYear[2], 10);
+      } else {
+        const originMatch = originMonthStr.match(/(\d+)/);
+        if (originMatch) {
+            itemMonthNum = parseInt(originMatch[0], 10);
+        }
+        if (itemMonthNum === 11 || itemMonthNum === 12) {
+          itemYearNum = currentYearNum === 2025 ? 2025 : (currentYearNum === 2026 ? 2025 : currentYearNum);
+        } else if (itemMonthNum > currentMonthNum && (currentYearNum === 2025 || currentYearNum === 2026)) {
+          itemYearNum = currentYearNum - 1;
+        } else {
+          itemYearNum = currentYearNum;
+        }
+      }
+      const itemTotal = itemYearNum * 12 + itemMonthNum;
+      const isPastMonthHold = isHold && (itemTotal < currentTotal);
+      const effectiveAbsVal = isPastMonthHold ? 0 : absVal;
 
       if (!ledgers[key]) {
         ledgers[key] = {
@@ -470,16 +483,13 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (isHold) {
-        ledgers[key].totalHold += absVal;
+        ledgers[key].totalHold += effectiveAbsVal;
       } else if (isAdd) {
         ledgers[key].totalAdd += absVal;
       }
     });
 
     // Now construct computed rows with "Tháng báo cáo", "Trạng thái", "Nghiệp vụ"
-    const currentPeriodParts = (present.globalMonth || "03.2026").split(".");
-    const currentMonthNum = parseInt(currentPeriodParts[0], 10) || 3;
-    const currentYearNum = parseInt(currentPeriodParts[1], 10) || 2026;
 
     const computedData = holdRows.map((row, index) => {
       const id = String(row["ID Number"] || "").trim();
@@ -597,6 +607,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         Note: row["Note"] !== undefined ? String(row["Note"]) : "",
         "Diễn giải": row["Diễn giải"] !== undefined ? String(row["Diễn giải"]) : "",
         _dimmed: isPastMonthHoldOrCancel,
+        _isPastMonthHoldOrCancel: isPastMonthHoldOrCancel,
       };
     });
 

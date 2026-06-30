@@ -1,4 +1,4 @@
-import appLogo from "@/assets/images/regenerated_image_1782801979718.png";
+import appLogo from "@/assets/images/regenerated_image_1782821491957.png";
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 import { useMemo, useRef, useState, useCallback } from "react";
 import { useAppData } from "../../lib/contexts/AppDataContext";
@@ -202,12 +202,10 @@ export function MasterAE() {
       if (tMatch) {
         const m = parseInt(tMatch[1], 10);
         let y = currentYear;
-        // If extracted month > current month, it's likely from the previous year
-        if (m > currentMonthNum) {
+        if (m === 11 || m === 12) {
+          y = currentYear === 2025 ? 2025 : (currentYear === 2026 ? 2025 : currentYear);
+        } else if (m > currentMonthNum && (currentYear === 2025 || currentYear === 2026)) {
           y = currentYear - 1;
-        } else if (m === 11 || m === 12) {
-          // Special case for year end transition: if we are in early 2026, 11/12 should be 2025
-          if (currentYear === 2026) y = 2025;
         }
         return y * 12 + m;
       }
@@ -215,10 +213,10 @@ export function MasterAE() {
       if (numMatch) {
         const m = parseInt(numMatch[1], 10);
         let y = currentYear;
-        if (m > currentMonthNum) {
+        if (m === 11 || m === 12) {
+          y = currentYear === 2025 ? 2025 : (currentYear === 2026 ? 2025 : currentYear);
+        } else if (m > currentMonthNum && (currentYear === 2025 || currentYear === 2026)) {
           y = currentYear - 1;
-        } else if (m === 11 || m === 12) {
-          if (currentYear === 2026) y = 2025;
         }
         return y * 12 + m;
       }
@@ -227,27 +225,14 @@ export function MasterAE() {
     [appData.globalMonth],
   );
 
-  // Tách dependency: chỉ lấy các field cần thiết thay vì toàn bộ appData
-  const sheet1AEData = appData.Sheet1_AE;
-  const holdAEData = appData.Hold_AE;
-  const bulkPaymentData = appData.BulkPayment;
-  const bankExportData = appData.BankExport;
-  const globalMonth = appData.globalMonth;
-
   const currentData = useMemo(() => {
     const raw =
       activeTab === "BulkPayment"
-        ? bankExportData
-        : activeTab === "Sheet1_AE"
-          ? sheet1AEData
-          : activeTab === "Hold_AE"
-            ? holdAEData
-            : activeTab === "BulkPayment"
-              ? bulkPaymentData
-              : sheet1AEData;
+        ? appData.BankExport
+        : appData[activeTab as keyof typeof appData] || appData.Sheet1_AE;
     
     if (raw && Array.isArray(raw.data)) {
-      const currentPeriodVal = globalMonth || "03.2026";
+      const currentPeriodVal = appData.globalMonth || "03.2026";
       const currentLimit = parseToMonthIndex(currentPeriodVal);
       
       // Map data to ensure "Tháng báo cáo" is correctly populated, especially for older data
@@ -279,7 +264,7 @@ export function MasterAE() {
     }
     
     return raw;
-  }, [activeTab, sheet1AEData, holdAEData, bulkPaymentData, bankExportData, globalMonth, parseToMonthIndex]);
+  }, [activeTab, appData, parseToMonthIndex]);
 
   const columns = useMemo(() => {
     let headers = currentData.headers && currentData.headers.length > 0 
@@ -323,16 +308,8 @@ export function MasterAE() {
       .map((header: string) => {
         const h = header.toUpperCase();
         const isLabel = h === "LABEL";
-        let type: "text" | "number" | "currency" | "date" | "label" = "text";
+        let type: "text" | "number" | "currency" | "label" = "text";
         if (
-          h.includes("DATE") ||
-          h.includes("NGÀY") ||
-          h === "FROM" ||
-          h === "TO" ||
-          h === "THÁNG BÁO CÁO"
-        ) {
-          type = "date";
-        } else if (
           h.includes("TOTAL") ||
           h.includes("CHARGE") ||
           h.includes("PAYMENT") ||
@@ -531,16 +508,16 @@ export function MasterAE() {
             className="absolute inset-0 flex flex-col min-h-0 bg-transparent px-[32px] pt-[20px] pb-[20px] gap-8 items-center overflow-hidden"
           >
             {/* Decorative Background Elements */}
-            <div className="absolute top-[-10%] right-[-5%] w-[40%] h-[40%] bg-purple-500/5 rounded-full blur-[120px] -z-10" />
-            <div className="absolute bottom-[-10%] left-[-5%] w-[30%] h-[30%] bg-purple-500/5 rounded-full blur-[100px] -z-10" />
+            <div className="absolute top-[-10%] right-[-5%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[120px] -z-10" />
+            <div className="absolute bottom-[-10%] left-[-5%] w-[30%] h-[30%] bg-primary/5 rounded-full blur-[100px] -z-10" />
 
             {/* Main Content Card */}
-            <div className="bg-white soft-card force-light flex-1 flex flex-col min-h-0 relative z-10 w-full overflow-hidden rounded-[48px] border-purple-100">
-              <div className="absolute inset-0 bg-pattern-purple opacity-[0.08] pointer-events-none rounded-[48px] overflow-hidden" />
+            <div className="bg-white soft-card force-light flex-1 flex flex-col min-h-0 relative z-10 w-full overflow-hidden">
+              <div className="absolute inset-0 striped-pattern opacity-[0.05] pointer-events-none rounded-[2.5rem] overflow-hidden" />
 
               {/* Integrated Header & Controls */}
-              <div className="px-[32px] py-[32px] h-[92.67px] my-0 flex flex-row items-center justify-between gap-6 border-none rounded-[48px] bg-purple-50/50 shrink-0 relative">
-                <div className="absolute inset-0 pattern-dots opacity-[0.05] pointer-events-none rounded-[48px]" />
+              <div className="px-[32px] py-[32px] h-[92.67px] my-0 flex flex-row items-center justify-between gap-6 border-b border-border bg-muted/10 shrink-0 relative">
+                <div className="absolute inset-0 pattern-dots opacity-[0.05] pointer-events-none" />
                 <div className="flex items-center gap-5 relative z-10 shrink-0">
                   <div className="w-[40px] h-[40px] bg-white rounded-[400px] bg-transparent shrink-0 hidden md:block relative overflow-hidden">
                     <img
@@ -860,7 +837,7 @@ export function MasterAE() {
               </div>
 
               {/* Content Area */}
-              <div className="flex-1 flex flex-col min-h-0 relative z-10 w-full overflow-hidden p-0">
+              <div className="flex-1 flex flex-col min-h-0 relative z-10 w-full overflow-hidden">
                 {activeTab === "BulkPayment" ? (
                   <BulkPayment
                     showLeftCard={showLeftCard}
@@ -908,9 +885,6 @@ export function MasterAE() {
                       }
                       onDeleteRow={(row, idx) =>
                         handleDeleteRow(activeTab, row)
-                      }
-                      onDeleteRows={(rows) => 
-                        handleDeleteRows(activeTab, rows)
                       }
                       onAddRow={handleAddRow}
                       isEditable={true}

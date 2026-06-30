@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/exhaustive-deps, @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/exhaustive-deps, @typescript-eslint/no-unused-vars, react-hooks/incompatible-library */
 import React, {
   useState,
   useMemo,
@@ -120,6 +120,7 @@ interface DataTableProps {
   showFooter?: boolean;
   headerClassName?: string;
   footerClassName?: string;
+  totalCalculationOverride?: (row: any, colKey: string) => number | null;
   className?: string;
   striped?: boolean;
   resizableColumns?: boolean;
@@ -641,6 +642,7 @@ export const DataTable = React.forwardRef<DataTableRef, DataTableProps>(
       showFooter = false,
       headerClassName,
       footerClassName,
+      totalCalculationOverride,
       className,
       striped = false,
       resizableColumns = true,
@@ -1543,6 +1545,7 @@ export const DataTable = React.forwardRef<DataTableRef, DataTableProps>(
 
     const handleContextMenu = useCallback(
       (e: React.MouseEvent, r: number, c: number) => {
+        if (!isEditable) return;
         e.preventDefault();
         if (r !== -1) {
           // If there's a selection range and the right-click is inside it, don't change the active cell
@@ -1872,19 +1875,6 @@ export const DataTable = React.forwardRef<DataTableRef, DataTableProps>(
         } else if (e.key === "Enter" || e.key === "F2") {
           e.preventDefault();
           startEditing(r, c);
-        } else if (e.key === "a" && (e.ctrlKey || e.metaKey)) {
-          e.preventDefault();
-          setSelectionRange({
-            startR: 0,
-            endR: filteredAndSortedData.length - 1,
-            startC: 0,
-            endC: visibleColumns.length - 1,
-          });
-          const allIds = new Set(filteredAndSortedData.map(r => r.id));
-          setSelectedRowIds(allIds);
-          if (onSelectionChange) {
-            onSelectionChange(filteredAndSortedData.filter(r => allIds.has(r.id)));
-          }
         } else if (e.key === "Delete" || e.key === "Backspace") {
           if (onCellChange) {
             if (selectionRange) {
@@ -2355,18 +2345,50 @@ export const DataTable = React.forwardRef<DataTableRef, DataTableProps>(
                     {selectable && <td className="bg-transparent" />}
                     {showRowNumber && <td className="bg-transparent" />}
                     {visibleColumns.map((col: any, cIdx: number) => {
-                      const isNumeric =
+                      let colIsNumeric =
                         col.type === "number" ||
                         col.type === "currency" ||
                         col.type === "money";
-                      const grandTotal = isNumeric
+
+                      if (
+                        !colIsNumeric &&
+                        col.type !== "text" &&
+                        col.type !== "label" &&
+                        filteredAndSortedData.length > 0 &&
+                        col.key !== "STT" &&
+                        col.key !== "stt"
+                      ) {
+                        let numericCount = 0;
+                        let totalValCount = 0;
+                        const sampleSize = Math.min(20, filteredAndSortedData.length);
+                        for (let i = 0; i < sampleSize; i++) {
+                          const r = filteredAndSortedData[i];
+                          if (r) {
+                            const rawVal = r[col.key];
+                            if (rawVal !== undefined && rawVal !== null && String(rawVal).trim() !== "") {
+                              totalValCount++;
+                              const str = String(rawVal).trim();
+                              const parsed = parseMoneyToNumber(str);
+                              if (parsed !== 0 || str === "0") {
+                                numericCount++;
+                              }
+                            }
+                          }
+                        }
+                        if (totalValCount > 0 && numericCount / totalValCount > 0.7) {
+                          colIsNumeric = true;
+                        }
+                      }
+
+                      const grandTotal = colIsNumeric
                         ? filteredAndSortedData.reduce(
                             (sum, row) => {
-                              if (row._dimmed) return sum;
-                              const st = String(row["Trạng thái"] || "").toUpperCase();
-                              const nv = String(row["Nghiệp vụ"] || "").toUpperCase();
-                              if (st.includes("CANCEL") || nv.includes("CANCEL")) return sum;
-                              return sum + (parseMoneyToNumber(row[col.key]) || 0);
+                              if (totalCalculationOverride) {
+                                const override = totalCalculationOverride(row, col.key);
+                                if (override !== null) return sum + override;
+                              }
+                              const val = parseMoneyToNumber(row[col.key]);
+                              return sum + (val || 0);
                             },
                             0,
                           )
@@ -2395,8 +2417,8 @@ export const DataTable = React.forwardRef<DataTableRef, DataTableProps>(
                         >
                           {cIdx === 0
                             ? "TỔNG CỘNG"
-                            : grandTotal !== null
-                              ? formatValue(grandTotal, col.type)
+                            : colIsNumeric && col.key !== "STT" && col.key !== "stt" && grandTotal !== null
+                              ? formatValue(grandTotal, col.type === "number" ? "number" : "currency")
                               : ""}
                         </td>
                       );

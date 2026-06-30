@@ -20,7 +20,7 @@ export function CenterTable({ data, onFilteredDataChange }: CenterTableProps) {
       className="rounded-[40px]"
       headerClassName="bg-indigo-50 text-indigo-900 border-indigo-100"
       footerClassName="bg-indigo-100 text-indigo-950 font-black"
-      showFooter={true}
+      showFooter={false}
       onFilteredDataChange={onFilteredDataChange}
     />
   );
